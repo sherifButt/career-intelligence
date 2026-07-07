@@ -15,27 +15,37 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Paperclip, Upload } from "lucide-react";
 import type { DocType } from "@/lib/db/schema";
 
-// Upload = post the raw file to /api/ingest as multipart. Text extraction
-// (.md/.txt passthrough, .pdf via unpdf, .docx via mammoth) happens server-
-// side, then the same chunk → embed → store pipeline runs (idempotent by
-// name).
+// Two ways in, matching the API's two content types: a raw file posted as
+// multipart (server-side extraction for pdf/docx) or pasted text posted as
+// JSON. Both run the same chunk → embed → store → screen pipeline.
 const ACCEPTED = /\.(md|txt|pdf|docx)$/i;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_TEXT_CHARS = 200_000;
 
 export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"file" | "paste">("file");
   const [file, setFile] = useState<File | null>(null);
+  const [pastedText, setPastedText] = useState("");
   const [name, setName] = useState("");
   const [docType, setDocType] = useState<DocType>("job");
   const [submitting, setSubmitting] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const ready =
+    name.trim().length > 0 &&
+    (mode === "file" ? file !== null : pastedText.trim().length > 0);
+
   function reset() {
+    setMode("file");
     setFile(null);
+    setPastedText("");
     setName("");
     setDocType("job");
     setDragging(false);
@@ -58,14 +68,30 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
   }
 
   async function submit() {
-    if (!file || !name.trim() || submitting) return;
+    if (!ready || submitting) return;
     setSubmitting(true);
     try {
-      const form = new FormData();
-      form.set("file", file);
-      form.set("name", name.trim());
-      form.set("docType", docType);
-      const res = await fetch("/api/ingest", { method: "POST", body: form });
+      let res: Response;
+      if (mode === "file" && file) {
+        const form = new FormData();
+        form.set("file", file);
+        form.set("name", name.trim());
+        form.set("docType", docType);
+        res = await fetch("/api/ingest", { method: "POST", body: form });
+      } else {
+        if (pastedText.length > MAX_TEXT_CHARS) {
+          throw new Error(`Pasted text is too long (max ${MAX_TEXT_CHARS / 1000}k characters)`);
+        }
+        res = await fetch("/api/ingest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            docType,
+            content: pastedText,
+          }),
+        });
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `Ingest failed (${res.status})`);
       toast.success(
@@ -106,56 +132,79 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
         <DialogHeader>
           <DialogTitle>Add a document</DialogTitle>
           <DialogDescription>
-            Upload a résumé or job description (.md, .txt, .pdf or .docx). It
-            is chunked, embedded, and immediately available to ask about.
+            Add a résumé or job description to the corpus — it is chunked,
+            embedded, screened for fit, and immediately available to ask about.
           </DialogDescription>
         </DialogHeader>
 
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            const dropped = e.dataTransfer.files?.[0];
-            if (dropped) handleFile(dropped);
-          }}
-          className={`flex w-full flex-col items-center gap-1.5 rounded-md border border-dashed px-4 py-6 text-sm transition-colors ${
-            dragging ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-          }`}
-        >
-          <Upload className="size-5 text-muted-foreground" />
-          {file ? (
-            <span className="font-medium">{file.name}</span>
-          ) : (
-            <>
-              <span className="font-medium">
-                Choose a .md, .txt, .pdf or .docx file
-              </span>
-              <span className="text-xs text-muted-foreground">
-                or drag it here
-              </span>
-            </>
-          )}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".md,.txt,.pdf,.docx"
-          className="hidden"
-          onChange={(e) => {
-            const picked = e.target.files?.[0];
-            if (picked) handleFile(picked);
-            e.target.value = "";
-          }}
-        />
+        <Tabs value={mode} onValueChange={(v) => setMode(v as "file" | "paste")}>
+          <TabsList className="w-full">
+            <TabsTrigger value="file" className="flex-1">
+              Upload file
+            </TabsTrigger>
+            <TabsTrigger value="paste" className="flex-1">
+              Paste text
+            </TabsTrigger>
+          </TabsList>
 
-        {file && (
+          <TabsContent value="file" className="mt-3">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragging(false);
+                const dropped = e.dataTransfer.files?.[0];
+                if (dropped) handleFile(dropped);
+              }}
+              className={`flex w-full flex-col items-center gap-1.5 rounded-md border border-dashed px-4 py-6 text-sm transition-colors ${
+                dragging ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+              }`}
+            >
+              <Upload className="size-5 text-muted-foreground" />
+              {file ? (
+                <span className="font-medium">{file.name}</span>
+              ) : (
+                <>
+                  <span className="font-medium">
+                    Choose a .md, .txt, .pdf or .docx file
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    or drag it here
+                  </span>
+                </>
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".md,.txt,.pdf,.docx"
+              className="hidden"
+              onChange={(e) => {
+                const picked = e.target.files?.[0];
+                if (picked) handleFile(picked);
+                e.target.value = "";
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="paste" className="mt-3">
+            <Textarea
+              value={pastedText}
+              onChange={(e) => setPastedText(e.target.value)}
+              placeholder="Paste the job description or résumé here — plain text or markdown…"
+              className="max-h-48 min-h-32 text-sm"
+              aria-label="Document text"
+            />
+          </TabsContent>
+        </Tabs>
+
+        {(file || pastedText.trim()) && (
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="doc-name">Name</Label>
@@ -163,7 +212,7 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
                 id="doc-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="job-4-acme-ai.pdf"
+                placeholder={mode === "paste" ? "job-4-acme-ai" : "job-4-acme-ai.pdf"}
               />
               <p className="text-xs text-muted-foreground">
                 Re-using an existing name replaces that document.
@@ -197,7 +246,7 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
           <Button variant="ghost" onClick={() => setOpen(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!file || !name.trim() || submitting}>
+          <Button onClick={submit} disabled={!ready || submitting}>
             {submitting && <Loader2 className="size-4 animate-spin" />}
             {submitting ? "Processing…" : "Ingest"}
           </Button>

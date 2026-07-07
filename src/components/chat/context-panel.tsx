@@ -172,10 +172,17 @@ function DocList({
             <p className="truncate text-sm font-medium" title={doc.name}>
               {doc.name}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {formatSize(doc.sizeBytes)} · {formatWhen(doc.createdAt)}
-            </p>
-            {doc.analysis && <MatchRow analysis={doc.analysis} />}
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+              <span>
+                {formatSize(doc.sizeBytes)} · {formatWhen(doc.createdAt)}
+              </span>
+              {doc.analysis && (
+                <>
+                  <span aria-hidden>·</span>
+                  <MatchStats analysis={doc.analysis} />
+                </>
+              )}
+            </div>
           </div>
           <Button
             variant="ghost"
@@ -211,13 +218,13 @@ const RISK_CLASSES = {
   high: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400",
 };
 
-function MatchRow({ analysis }: { analysis: JobAnalysis }) {
+function MatchStats({ analysis }: { analysis: JobAnalysis }) {
   return (
-    <div
-      className="mt-1 flex flex-wrap items-center gap-1.5"
+    <span
+      className="inline-flex flex-wrap items-center gap-1.5"
       title={analysis.riskNote || undefined}
     >
-      <span className="flex items-center gap-1 text-xs font-medium tabular-nums">
+      <span className="flex items-center gap-1 text-xs font-medium tabular-nums text-foreground">
         <span
           className={`size-2 rounded-full ${scoreColor(analysis.matchScore)}`}
           aria-hidden
@@ -247,7 +254,7 @@ function MatchRow({ analysis }: { analysis: JobAnalysis }) {
           {analysis.seniority}
         </Badge>
       )}
-    </div>
+    </span>
   );
 }
 

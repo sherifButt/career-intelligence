@@ -65,7 +65,8 @@ retrieval scores, guardrail flag, latency, token usage, and estimated cost.
 Key behaviours you can verify in the UI:
 
 - **Corpus management** — the 📎 in the chat box uploads a résumé or job description
-  (.md, .txt, .pdf, .docx — drag-and-drop or file picker). Text extraction runs server-side
+  (.md, .txt, .pdf, .docx — drag-and-drop or file picker) or accepts pasted text/markdown
+  directly. Text extraction runs server-side
   (unpdf for PDF, mammoth for docx); the document is chunked, embedded, and queryable
   immediately, with a scope chip appearing for each new job. Re-using a name replaces that
   document; hovering a document in the Context panel (right) reveals delete (with
