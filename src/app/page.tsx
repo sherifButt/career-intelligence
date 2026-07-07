@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AddDocumentDialog } from "@/components/chat/add-document-dialog";
 import {
   DocumentSidebar,
   type DocumentSummary,
@@ -56,6 +57,13 @@ export default function ChatPage() {
 
   useEffect(loadDocuments, []);
 
+  // Derived, not synced: if the scoped job was deleted, fall back to "all
+  // jobs" instead of sending a stale id the API would reject.
+  const effectiveScope =
+    jobScope !== null && jobDocs.some((d) => d.id === jobScope)
+      ? jobScope
+      : null;
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, pending]);
@@ -72,7 +80,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: trimmed,
-          ...(jobScope !== null && { jobDocumentId: jobScope }),
+          ...(effectiveScope !== null && { jobDocumentId: effectiveScope }),
         }),
       });
       const data = await res.json();
@@ -135,18 +143,19 @@ export default function ChatPage() {
             {jobDocs.length > 1 && (
               <JobScopeSelector
                 jobs={jobDocs}
-                scope={jobScope}
+                scope={effectiveScope}
                 onScopeChange={setJobScope}
                 disabled={pending}
               />
             )}
             <form
-              className="flex gap-2"
+              className="flex items-center gap-2"
               onSubmit={(e) => {
                 e.preventDefault();
                 ask(input);
               }}
             >
+              <AddDocumentDialog onAdded={loadDocuments} />
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

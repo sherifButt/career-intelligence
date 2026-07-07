@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FilePlus2, Loader2, Upload } from "lucide-react";
+import { Loader2, Paperclip, Upload } from "lucide-react";
 import type { DocType } from "@/lib/db/schema";
 
 // Upload = post the raw file to /api/ingest as multipart. Text extraction
@@ -89,9 +89,13 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
         if (!next) reset();
       }}
     >
-      <DialogTrigger render={<Button variant="outline" size="sm" className="w-full" />}>
-        <FilePlus2 className="size-4" />
-        Add document
+      {/* Lives inside the chat form — explicit type="button" so opening
+          the dialog never submits the question form. */}
+      <DialogTrigger
+        render={<Button type="button" variant="ghost" size="icon" />}
+      >
+        <Paperclip className="size-4" />
+        <span className="sr-only">Add document to the corpus</span>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
