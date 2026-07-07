@@ -126,7 +126,7 @@ export const InlineCitationQuote = ({
 }: InlineCitationQuoteProps) => (
   <blockquote
     className={cn(
-      "border-muted border-l-2 pl-3 text-muted-foreground text-sm italic",
+      "border-muted border-l-2 pl-3 text-muted-foreground text-xs italic",
       className
     )}
     {...props}

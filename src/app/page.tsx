@@ -18,7 +18,8 @@ import type { ChatResponse } from "@/lib/types";
 import { Check, Copy, SendHorizontal, ShieldAlert, Square } from "lucide-react";
 
 // The assignment's example queries, one click away — lets a reviewer demo
-// the app without composing a question.
+// the app without composing a question. Shown in the empty state and as the
+// fallback whenever contextual suggestions aren't available.
 const QUICK_QUERIES = [
   "What skills am I missing for the Newpage FDE role?",
   "How does my experience align with Job #2?",
@@ -45,6 +46,10 @@ export default function ChatPage() {
   const [pending, setPending] = useState(false);
   // null = compare against all jobs; a document id = analyse that job only.
   const [jobScope, setJobScope] = useState<number | null>(null);
+  // Contextual follow-ups predicted from the last exchange; null = none yet
+  // (presets are shown instead).
+  const [suggestions, setSuggestions] = useState<string[] | null>(null);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const jobDocs = documents.filter((d) => d.docType === "job");
@@ -91,6 +96,11 @@ export default function ChatPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `Request failed (${res.status})`);
       setMessages((prev) => [...prev, { role: "assistant", ...data }]);
+      // Fire-and-forget: the answer is already on screen; fresh follow-ups
+      // swap in whenever they arrive.
+      if (!data.guardrailTriggered) {
+        void loadSuggestions(trimmed, data.answer);
+      }
     } catch (err) {
       const aborted = err instanceof DOMException && err.name === "AbortError";
       if (!aborted) {
@@ -111,6 +121,26 @@ export default function ChatPage() {
   // the backlog next to streaming.
   function stop() {
     abortRef.current?.abort();
+  }
+
+  async function loadSuggestions(question: string, answer: string) {
+    setSuggestionsLoading(true);
+    try {
+      const res = await fetch("/api/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, answer }),
+      });
+      const data = await res.json();
+      const next = Array.isArray(data.suggestions) ? data.suggestions : [];
+      // Fewer than 4 usable suggestions → keep whatever was shown before
+      // rather than flashing a half-empty row.
+      if (next.length === 4) setSuggestions(next);
+    } catch {
+      // Decorative feature: silently keep the previous row on failure.
+    } finally {
+      setSuggestionsLoading(false);
+    }
   }
 
   const lastQuestion =
@@ -159,9 +189,22 @@ export default function ChatPage() {
 
         <div className="border-t bg-background">
           <div className="mx-auto max-w-3xl px-4 py-3">
-            {messages.length > 0 && (
-              <QuickQueries onPick={ask} disabled={pending} compact />
-            )}
+            {messages.length > 0 &&
+              (suggestionsLoading ? (
+                <div className="mb-2 flex gap-2 pb-1" aria-hidden>
+                  <Skeleton className="h-8 w-44 shrink-0 rounded-md" />
+                  <Skeleton className="h-8 w-52 shrink-0 rounded-md" />
+                  <Skeleton className="h-8 w-40 shrink-0 rounded-md" />
+                  <Skeleton className="h-8 w-48 shrink-0 rounded-md" />
+                </div>
+              ) : (
+                <QuickQueries
+                  queries={suggestions ?? QUICK_QUERIES}
+                  onPick={ask}
+                  disabled={pending}
+                  compact
+                />
+              ))}
             {jobDocs.length > 1 && (
               <JobScopeSelector
                 jobs={jobDocs}
@@ -282,7 +325,7 @@ function EmptyState({
         Context panel — every response shows the exact excerpts it used.
       </p>
       <div className="mt-6 w-full max-w-md">
-        <QuickQueries onPick={onPick} disabled={disabled} />
+        <QuickQueries queries={QUICK_QUERIES} onPick={onPick} disabled={disabled} />
       </div>
     </div>
   );
@@ -349,10 +392,12 @@ function jobLabel(name: string): string {
 }
 
 function QuickQueries({
+  queries,
   onPick,
   disabled,
   compact = false,
 }: {
+  queries: string[];
   onPick: (q: string) => void;
   disabled: boolean;
   compact?: boolean;
@@ -363,7 +408,7 @@ function QuickQueries({
         compact ? "mb-2 flex gap-2 overflow-x-auto pb-1" : "grid gap-2"
       }
     >
-      {QUICK_QUERIES.map((q) => (
+      {queries.map((q) => (
         <Button
           key={q}
           variant="outline"
