@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText } from "lucide-react";
+import { AddDocumentDialog } from "./add-document-dialog";
 
 export interface DocumentSummary {
   id: number;
@@ -18,9 +19,11 @@ export interface DocumentSummary {
 export function DocumentSidebar({
   documents,
   loading,
+  onDocumentsChanged,
 }: {
   documents: DocumentSummary[];
   loading: boolean;
+  onDocumentsChanged: () => void;
 }) {
   const resumes = documents.filter((d) => d.docType === "resume");
   const jobs = documents.filter((d) => d.docType === "job");
@@ -54,6 +57,10 @@ export function DocumentSidebar({
           </div>
         )}
       </ScrollArea>
+      <Separator />
+      <div className="p-3">
+        <AddDocumentDialog onAdded={onDocumentsChanged} />
+      </div>
     </aside>
   );
 }

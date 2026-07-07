@@ -64,6 +64,10 @@ retrieval scores, guardrail flag, latency, token usage, and estimated cost.
 
 Key behaviours you can verify in the UI:
 
+- **Upload** — "Add document" in the sidebar ingests a new résumé or job description
+  (.md/.txt, drag-and-drop or file picker): chunked, embedded, and queryable immediately,
+  with a scope chip appearing for each new job. Re-using a name replaces that document.
+  PDF/docx parsing is deliberately future work.
 - **Multi-job awareness** — the job-side retrieval budget is allocated *per job* (top-2 chunks
   from each posting), so comparative questions cover every job instead of letting the most
   similar posting monopolise the context; answers spanning several jobs are organised per job.
@@ -177,5 +181,6 @@ tests/                       # retrieval integration test (self-skipping)
 |---|---|
 | ![Empty state](docs/screenshots/empty-state.png) | ![Answer with sources](docs/screenshots/chat-answer-with-sources.png) |
 | ![Guardrail refusal](docs/screenshots/guardrail-refusal.png) | ![Job-scoped answer](docs/screenshots/job-scoped-answer.png) |
+| ![Upload dialog](docs/screenshots/upload-dialog.png) | |
 
 <!-- SHERIF: if time permits, record a short demo video and link it here. -->

@@ -46,13 +46,15 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const jobDocs = documents.filter((d) => d.docType === "job");
 
-  useEffect(() => {
+  function loadDocuments() {
     fetch("/api/documents")
       .then((res) => res.json())
       .then((data) => setDocuments(data.documents ?? []))
       .catch(() => toast.error("Could not load documents — is the DB up?"))
       .finally(() => setDocsLoading(false));
-  }, []);
+  }
+
+  useEffect(loadDocuments, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -88,7 +90,11 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-full">
-      <DocumentSidebar documents={documents} loading={docsLoading} />
+      <DocumentSidebar
+        documents={documents}
+        loading={docsLoading}
+        onDocumentsChanged={loadDocuments}
+      />
 
       <main className="flex min-w-0 flex-1 flex-col">
         <ScrollArea className="flex-1">

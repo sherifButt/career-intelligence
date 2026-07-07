@@ -29,6 +29,14 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+  // Mirrors the client-side cap; the server is the one that pays the
+  // embedding bill, so it enforces the limit too.
+  if (content.length > 200_000) {
+    return NextResponse.json(
+      { error: "`content` is too large (max 200k characters)" },
+      { status: 400 },
+    );
+  }
 
   try {
     const result = await ingestDocument({ name: name.trim(), docType, content });
