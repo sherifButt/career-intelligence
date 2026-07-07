@@ -100,7 +100,7 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
         `${name.trim()} ingested — ${data.chunkCount} chunk${data.chunkCount === 1 ? "" : "s"} embedded`,
         {
           description: data.analysis
-            ? `${data.analysis.matchScore}% match · ${data.analysis.risk} risk · seniority ${data.analysis.seniority}`
+            ? `${data.analysis.matchScore}% fit${data.analysis.mustHaves ? ` · must-haves ${data.analysis.mustHaves}` : ""} · experience ${data.analysis.seniority}`
             : undefined,
         },
       );

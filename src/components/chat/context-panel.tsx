@@ -208,18 +208,28 @@ function scoreColor(score: number): string {
   return "bg-red-500/55";
 }
 
-const RISK_LABEL = { low: "low risk", medium: "med risk", high: "high risk" };
+// Skill gaps = must-haves the résumé doesn't evidence (total − met).
+// null when the analysis predates the mustHaves field.
+function gapCount(analysis: JobAnalysis): number | null {
+  const match = analysis.mustHaves?.match(/^(\d+)\/(\d+)$/);
+  if (!match) return null;
+  return Math.max(0, Number(match[2]) - Number(match[1]));
+}
 
-// Risk owns the color channel (traffic light); seniority stays quiet — a
-// green check when "fit", a neutral word only when it needs reading.
-const RISK_CLASSES = {
-  low: "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-400",
-  medium:
-    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
-  high: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400",
-};
+// Subtle tint only — the mono theme keeps color to a whisper.
+function gapClasses(gaps: number): string {
+  if (gaps === 0)
+    return "border-green-200/70 text-green-700 dark:border-green-900 dark:text-green-500";
+  if (gaps <= 2)
+    return "border-amber-200/70 text-amber-700 dark:border-amber-900 dark:text-amber-500";
+  return "border-red-200/70 text-red-700 dark:border-red-900 dark:text-red-500";
+}
 
+// The three metrics deliberately echo the assignment's own vocabulary —
+// fit, skill gaps, experience alignment. The recruiter-lens risk sentence
+// survives in the tooltip.
 function MatchStats({ analysis }: { analysis: JobAnalysis }) {
+  const gaps = gapCount(analysis);
   return (
      <span
         className='inline-flex flex-wrap items-center gap-1.5'
@@ -236,25 +246,28 @@ function MatchStats({ analysis }: { analysis: JobAnalysis }) {
               className={`size-2 rounded-full ${scoreColor(analysis.matchScore)}`}
               aria-hidden
            />
-           {analysis.matchScore}%
+           {analysis.matchScore}% fit
         </span>
-        <Badge
-           variant='outline'
-           className={`px-1.5 text-[10px] font-normal `}>
-           {RISK_LABEL[analysis.risk]}
-        </Badge>
+        {gaps !== null && (
+           <Badge
+              variant='outline'
+              className={`px-1.5 text-[10px] font-normal ${gapClasses(gaps)}`}>
+              {gaps} gap{gaps === 1 ? '' : 's'}
+           </Badge>
+        )}
         {analysis.seniority === 'fit' ? (
            <span
-              className='flex items-center '
-              title='Seniority: fit for the level this role is pitched at'>
+              className='flex items-center gap-0.5 text-muted-foreground'
+              title='Experience alignment: fit for the level this role is pitched at'>
               <Check className='size-3.5' strokeWidth={2} />
-              <span className='sr-only'>seniority: fit</span>
+              <span className='text-[10px]'>exp</span>
+              <span className='sr-only'>experience alignment: fit</span>
            </span>
         ) : (
            <Badge
               variant='outline'
               className='px-1.5 text-[10px] font-normal'
-              title={`Seniority: ${analysis.seniority}-qualified for this role`}>
+              title={`Experience alignment: ${analysis.seniority}-qualified for this role`}>
               {analysis.seniority}
            </Badge>
         )}
