@@ -200,11 +200,12 @@ function DocList({
 }
 
 // green ≥70 / amber 40–69 / red <40 — coarse on purpose; the number carries
-// the precision.
+// the precision. Faded (/55) so the dot whispers like the tinted badges
+// instead of being the loudest pixel in a mono theme.
 function scoreColor(score: number): string {
-  if (score >= 70) return "bg-green-500";
-  if (score >= 40) return "bg-amber-500";
-  return "bg-red-500";
+  if (score >= 70) return "bg-green-500/55";
+  if (score >= 40) return "bg-amber-500/55";
+  return "bg-red-500/55";
 }
 
 const RISK_LABEL = { low: "low risk", medium: "med risk", high: "high risk" };
