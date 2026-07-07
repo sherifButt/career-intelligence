@@ -78,8 +78,11 @@ Key behaviours you can verify in the UI:
 - **Job scope selector** — an "Analyse against" control pins a question to a single posting
   (retrieval filters to that document), instead of relying on the question text happening to
   match a job's wording.
-- **Source transparency** — every answer has a collapsible panel listing each retrieved chunk
-  with its document, type badge, and similarity score.
+- **Inline citations** — [S#] markers in answers render as numbered chips; hovering one shows
+  the cited chunk (document, similarity score, and the excerpt itself) without leaving the
+  answer. Adapted from the shadcn/AI-Elements inline-citation pattern.
+- **Source transparency** — every answer also has a collapsible panel listing each retrieved
+  chunk with its document, type badge, and similarity score.
 - **Guardrail** — ask something off-topic ("chocolate cake recipe") and it refuses without
   spending LLM tokens, still showing the (low) scores that triggered the refusal.
 - **Per-answer metrics** — latency, tokens in/out, and estimated cost under each response.
@@ -185,6 +188,6 @@ tests/                       # retrieval integration test (self-skipping)
 |---|---|
 | ![Empty state](docs/screenshots/empty-state.png) | ![Answer with sources](docs/screenshots/chat-answer-with-sources.png) |
 | ![Guardrail refusal](docs/screenshots/guardrail-refusal.png) | ![Job-scoped answer](docs/screenshots/job-scoped-answer.png) |
-| ![Upload dialog](docs/screenshots/upload-dialog.png) | |
+| ![Upload dialog](docs/screenshots/upload-dialog.png) | ![Inline citations](docs/screenshots/inline-citations.png) |
 
 <!-- SHERIF: if time permits, record a short demo video and link it here. -->

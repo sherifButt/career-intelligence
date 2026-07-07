@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddDocumentDialog } from "@/components/chat/add-document-dialog";
+import { AnswerMarkdown } from "@/components/chat/answer-markdown";
 import { ChatsSidebar } from "@/components/chat/chats-sidebar";
 import {
   ContextPanel,
@@ -237,7 +237,7 @@ function AssistantBubble({ message }: { message: AssistantMessage }) {
         </p>
       )}
       <div className="rounded-2xl border bg-card px-4 py-3 text-sm [&_li]:mt-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5">
-        <ReactMarkdown>{message.answer}</ReactMarkdown>
+        <AnswerMarkdown answer={message.answer} sources={message.sources} />
       </div>
       <div className="mt-1.5 flex items-center gap-2">
         <p className="font-mono text-[11px] text-muted-foreground">
