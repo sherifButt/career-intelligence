@@ -1,0 +1,78 @@
+LEAD TECHNICAL PRODUCT MANAGER
+ 
+Location: Bengaluru | Type: Full-time
+
+About Newpage Solutions
+
+Newpage Solutions is a global digital health innovation company helping people live longer, healthier lives. We partner with life sciences organisations which include, pharmaceutical, biotech and healthcare leaders, to build transformative AI and data driven technologies addressing real-world health challenges.
+From strategy and research to UX design and agile development, we deliver and validate impactful solutions using lean, human-centered practices.
+
+We are proud to be a ‘Great Place to Work®’ certified company for the last three consecutive years. We also hold a top Glassdoor rating and are named among the "Top 50 Most Promising Healthcare Solution Providers" by CIOReview. As an organisation, we foster creativity, continuous learning and inclusivity, creating an environment where bold ideas thrive and make a measurable difference in people’s lives.
+
+Your Mission
+ 
+We are hiring a Lead Technical Product Manager (TPM) to own end-to-end delivery of AI-powered solutions for our clients. As the single point of accountability for each engagement, you will translate ambitious product visions into shipped software — leading cross-functional teams of engineers, data and ML specialists, QA, and AI agents through a structured delivery lifecycle. 
+From initial scoping and solution design through build, validation, and handoff, you will be the primary client contact and the delivery team’s north star. This is a principal-level role for someone who thrives at the intersection of technical depth, Product/Program governance, and client partnership
+ 
+ 
+ 
+What You’ll Do
+ 
+Lead End-to-End Delivery
+Own the full delivery lifecycle: scoping, solution design, build, validation, and handoff across engagements ranging from rapid prototypes to production-grade enterprise solutions. 
+Frame the problem, define what “done” looks like, assemble the right team, and drive execution through structured quality gates. 
+Ensure live, deployed applications with CI/CD, cloud infrastructure, and AI tooling are configured and production-ready. 
+Run retrospectives and extract reusable patterns from every engagement to strengthen future delivery. 
+Own the Client Relationship 
+Serve as the primary client contact across all engagements — from kick-off workshops through to final handoff. 
+Run weekly check-ins, sprint reviews, steering committees, and structured demos using standardised delivery rituals. 
+Manage stakeholder expectations, escalations, and feedback loops; drive client satisfaction through proactive communication and transparency. 
+Build & Govern High-Performing Teams 
+Assess engagement complexity and staff accordingly — from lean teams for prototypes to full cross-functional squads for enterprise-grade work. 
+Manage resource allocation across phases, establishing clear RACI accountability for every workstream. 
+Maintain delivery cadence: daily stand-ups, sprint planning, risk reviews, and retrospectives scaled to the engagement. 
+Own the Product Lifecycle 
+Own the Product Requirements Document (PRD) lifecycle: author, iterate, gain sign-off, manage change, and verify acceptance criteria. 
+Drive engagement graduation (prototype → MVP → enterprise) on the same codebase with no rebuilds, ensuring solutions mature as client needs evolve. 
+Manage scope changes and trade-off decisions, keeping delivery aligned to the agreed product vision and acceptance criteria. 
+Drive Technical Quality 
+Collaborate with engineers on Architecture Decision Records, technical design documents, and API specifications. 
+Enforce quality gates across the delivery lifecycle — coordinating security scans, performance testing, and structured UAT. 
+Oversee AI agent configuration and orchestration across the delivery team — including code-generation assistants, automated testing, and CI/CD agents. 
+Measure & Report Business Value 
+Track value metrics: time to delivery, technical velocity, quality scores, reuse rates, client satisfaction, and business impact. 
+Deliver regular value reporting to stakeholders — from delivery snapshots to monthly business reviews and ROI analysis. 
+Champion reusable asset development, ensuring every engagement contributes patterns and components back to the platform. 
+ 
+What You Bring
+ 
+8+ years of experience in technical programme management, delivery leadership, or technical product management in a consulting, agency, or technology environment. 
+Proven track record delivering AI/ML or data-intensive products end-to-end, from concept through production launch. 
+Strong understanding of modern software delivery: CI/CD, cloud infrastructure (AWS / GCP / Azure), microservices, and API-first architecture. 
+Experience leading cross-functional teams (engineering, data, QA, security) through structured delivery frameworks with defined quality gates. 
+Demonstrated ability to own client relationships at senior stakeholder level — including scoping, demos, UAT, and handoffs. 
+Excellent communication skills: you can write a concise problem brief for a prototype and a comprehensive PRD with non-functional requirements for an enterprise engagement. 
+Comfortable working with AI-assisted development tools and agentic workflows (e.g., LLM-based code generation, automated testing, AI-driven CI/CD). 
+ 
+Nice to Have 
+ 
+Hands-on experience with AI capability modules such as conversational AI, retrieval-augmented generation (RAG), or Text-to-SQL. 
+Background in platform thinking — extracting reusable delivery patterns from project work and contributing them to a shared platform. 
+Familiarity with code quality and security tooling (e.g., SonarQube, SAST/DAST) and compliance frameworks for regulated industries. 
+Experience transitioning delivery engagements into managed support and maintenance models. 
+Track record mentoring or managing a team of TPMs or delivery leads. 
+
+What We Offer
+
+At Newpage, we’re building a company that works smart and grows with agility, where driven individuals come together to do work that matters. We offer:
+AI-native delivery: Lead teams that pair human expertise with a full-spectrum AI agent roster — this isn’t traditional software delivery. 
+Shape the practice: Your improvements to our delivery framework directly impact every future engagement across the company. 
+Principal-level autonomy: A clear governance structure that supports rather than constrains, giving you ownership and room to lead. 
+Continuous growth: A culture built on delivery excellence, client partnership, and relentless improvement. 
+
+Ready to Apply?
+
+Let’s build the future of health together. Apply below or reach out to: Prashanth.mahalingam@newpage.io
+More about Newpage
+Newpage is a digital health solutions company. We devote ourselves to advancing the quality of life by enhancing health and optimizing the longevity of people. We do this by, passionately building futuristic technologies for global organizations across the healthcare ecosystem. We partake at every stage from problem definition, strategy & service design, user research, UX design, and agile software development – utilizing lean practices to deliver and validate highly innovative digital health solutions that drive user value and business transformation.
+Newpage is recognized by ‘CIO’s Review’ as “Top 50 Promising Healthcare Solution Providers” and Great Place to Work Certified (GPTW) 2023 & 2024.

@@ -86,7 +86,11 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, pending]);
 
-  async function ask(question: string) {
+  // `scopeOverride` lets a caller scope and ask in one action (the panel's
+  // Prep button) — setJobScope + ask in the same tick would otherwise send
+  // the stale scope from this render's closure.
+  async function ask(question: string, scopeOverride?: number) {
+    const scope = scopeOverride ?? effectiveScope;
     const trimmed = question.trim();
     if (!trimmed || pending) return;
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
@@ -100,7 +104,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: trimmed,
-          ...(effectiveScope !== null && { jobDocumentId: effectiveScope }),
+          ...(scope !== null && { jobDocumentId: scope }),
         }),
         signal: controller.signal,
       });
@@ -264,6 +268,13 @@ export default function ChatPage() {
         documents={documents}
         loading={docsLoading}
         onDocumentsChanged={loadDocuments}
+        onPrep={(doc) => {
+          setJobScope(doc.id);
+          void ask(
+            `What should I prepare for the ${jobLabel(doc.name)} interview, given my gaps?`,
+            doc.id,
+          );
+        }}
       />
     </div>
   );
@@ -399,7 +410,7 @@ function JobScopeSelector({
 // matches, otherwise fall back to the bare filename.
 function jobLabel(name: string): string {
   const match = name.match(/^job[-_ ]?(\d+)/i);
-  return match ? `Job ${match[1]}` : name.replace(/\.(md|txt)$/i, "");
+  return match ? `Job ${match[1]}` : name.replace(/\.(md|txt|pdf|docx)$/i, "");
 }
 
 function QuickQueries({

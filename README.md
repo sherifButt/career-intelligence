@@ -88,6 +88,11 @@ Key behaviours you can verify in the UI:
   warning), and an **apply verdict** (Yes/No — is this application worth making as-is). The
   Context panel splits résumé from jobs and ranks jobs best-fit-first; re-ingesting the résumé
   re-screens every job; uploading a JD toasts its screen immediately.
+- **One-click interview prep** — jobs with a Yes verdict get a 🎯 button that scopes the chat
+  to that job and asks the interview-prep question through the normal RAG pipeline, so the
+  prep advice arrives grounded and cited, and the follow-up suggestions continue the prep
+  conversation. (Deliberately routed to chat instead of a separate dialog: one answer
+  surface, zero new backend.)
 - **Contextual follow-ups** — after each answer, the quick-question row regenerates: a small
   LLM call (fired after the answer renders, so it adds no latency) predicts the four most
   useful next questions from the last exchange and the loaded documents. Falls back to the
@@ -209,5 +214,6 @@ tests/                       # retrieval integration test (self-skipping)
 | ![Guardrail refusal](docs/screenshots/guardrail-refusal.png) | ![Job-scoped answer](docs/screenshots/job-scoped-answer.png) |
 | ![Upload dialog](docs/screenshots/upload-dialog.png) | ![Inline citations](docs/screenshots/inline-citations.png) |
 | ![Contextual follow-up suggestions](docs/screenshots/contextual-suggestions.png) | ![Job stats tooltip](docs/screenshots/job-stats-tooltip.png) |
+| ![One-click interview prep](docs/screenshots/interview-prep.png) | |
 
 <!-- SHERIF: if time permits, record a short demo video and link it here. -->
