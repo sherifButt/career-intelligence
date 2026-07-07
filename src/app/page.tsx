@@ -41,7 +41,10 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
+  // null = compare against all jobs; a document id = analyse that job only.
+  const [jobScope, setJobScope] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const jobDocs = documents.filter((d) => d.docType === "job");
 
   useEffect(() => {
     fetch("/api/documents")
@@ -65,7 +68,10 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: trimmed }),
+        body: JSON.stringify({
+          question: trimmed,
+          ...(jobScope !== null && { jobDocumentId: jobScope }),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `Request failed (${res.status})`);
@@ -119,6 +125,14 @@ export default function ChatPage() {
           <div className="mx-auto max-w-3xl px-4 py-3">
             {messages.length > 0 && (
               <QuickQueries onPick={ask} disabled={pending} compact />
+            )}
+            {jobDocs.length > 1 && (
+              <JobScopeSelector
+                jobs={jobDocs}
+                scope={jobScope}
+                onScopeChange={setJobScope}
+                disabled={pending}
+              />
             )}
             <form
               className="flex gap-2"
@@ -189,6 +203,66 @@ function EmptyState({
       </div>
     </div>
   );
+}
+
+// Scopes retrieval to one job posting: an explicit UI control instead of
+// hoping the embedding similarity resolves "Job #2" from the question text.
+function JobScopeSelector({
+  jobs,
+  scope,
+  onScopeChange,
+  disabled,
+}: {
+  jobs: DocumentSummary[];
+  scope: number | null;
+  onScopeChange: (scope: number | null) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div
+      className="mb-2 flex items-center gap-1.5 overflow-x-auto pb-1"
+      role="radiogroup"
+      aria-label="Job scope"
+    >
+      <span className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        Analyse against
+      </span>
+      <Button
+        variant={scope === null ? "secondary" : "ghost"}
+        size="sm"
+        role="radio"
+        aria-checked={scope === null}
+        disabled={disabled}
+        onClick={() => onScopeChange(null)}
+        className="h-7 shrink-0 rounded-full px-3 text-xs"
+      >
+        All jobs
+      </Button>
+      {jobs.map((job) => (
+        <Button
+          key={job.id}
+          variant={scope === job.id ? "secondary" : "ghost"}
+          size="sm"
+          role="radio"
+          aria-checked={scope === job.id}
+          disabled={disabled}
+          onClick={() => onScopeChange(scope === job.id ? null : job.id)}
+          className="h-7 shrink-0 rounded-full px-3 text-xs"
+          title={job.name}
+        >
+          {jobLabel(job.name)}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+// "job-2-senior-fullstack.md" → "job-2-senior-fullstack" is still noisy on a
+// chip; shorten to the leading "Job N" when the seed naming convention
+// matches, otherwise fall back to the bare filename.
+function jobLabel(name: string): string {
+  const match = name.match(/^job[-_ ]?(\d+)/i);
+  return match ? `Job ${match[1]}` : name.replace(/\.(md|txt)$/i, "");
 }
 
 function QuickQueries({

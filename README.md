@@ -46,8 +46,8 @@ flowchart TD
     B1 --> B2["embed (text-embedding-3-small, batched)"]
     B2 --> B3[("PostgreSQL + pgvector\nchunks + embeddings + metadata")]
 
-    Q[User question] --> E[embed query]
-    E --> R["balanced retrieval:\ntop-4 resume + top-4 job chunks\n(cosine similarity)"]
+    Q["User question\n(optionally scoped to one job)"] --> E[embed query]
+    E --> R["balanced retrieval:\ntop-4 resume chunks +\ntop-2 chunks PER JOB\n(or top-4 from the scoped job)"]
     B3 --> R
     R --> G{"guardrail:\nbest score ≥ 0.25?"}
     G -- no --> X["refuse — no LLM call,\nsources still shown"]
@@ -64,6 +64,12 @@ retrieval scores, guardrail flag, latency, token usage, and estimated cost.
 
 Key behaviours you can verify in the UI:
 
+- **Multi-job awareness** — the job-side retrieval budget is allocated *per job* (top-2 chunks
+  from each posting), so comparative questions cover every job instead of letting the most
+  similar posting monopolise the context; answers spanning several jobs are organised per job.
+- **Job scope selector** — an "Analyse against" control pins a question to a single posting
+  (retrieval filters to that document), instead of relying on the question text happening to
+  match a job's wording.
 - **Source transparency** — every answer has a collapsible panel listing each retrieved chunk
   with its document, type badge, and similarity score.
 - **Guardrail** — ask something off-topic ("chocolate cake recipe") and it refuses without
@@ -124,7 +130,8 @@ tests/                       # retrieval integration test (self-skipping)
 >   - Why pgvector over Pinecone/Qdrant — two-sentence version you can say out loud.
 >   - Why gpt-4o-mini, what a query costs (~$0.0006 observed), and what the provider abstraction buys.
 >   - Why NO orchestration framework — and the threshold at which you'd reach for one.
->   - Balanced resume+job retrieval instead of global top-k — the strongest decision here; own it.
+>   - Job-aware retrieval (per-job budgets + the scope selector) instead of global top-k — the
+>     strongest decision here and your product-innovation story; own both failure modes it fixes.
 >   - Guardrails: how the 0.25 threshold was picked empirically and what its limits are.
 >   - How you'd measure quality (golden set) and what the structured logs already give you.
 
@@ -169,6 +176,6 @@ tests/                       # retrieval integration test (self-skipping)
 | | |
 |---|---|
 | ![Empty state](docs/screenshots/empty-state.png) | ![Answer with sources](docs/screenshots/chat-answer-with-sources.png) |
-| ![Guardrail refusal](docs/screenshots/guardrail-refusal.png) | |
+| ![Guardrail refusal](docs/screenshots/guardrail-refusal.png) | ![Job-scoped answer](docs/screenshots/job-scoped-answer.png) |
 
 <!-- SHERIF: if time permits, record a short demo video and link it here. -->

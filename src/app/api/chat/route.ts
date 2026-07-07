@@ -6,15 +6,22 @@ import { logQuery } from "@/lib/observability/log";
 import { embedQuery } from "@/lib/rag/embed";
 import { REFUSAL_MESSAGE, shouldRefuse } from "@/lib/rag/guardrail";
 import { buildGroundedPrompt } from "@/lib/rag/prompt";
-import { retrieveByEmbedding } from "@/lib/rag/retrieve";
+import { listJobDocuments, retrieveByEmbedding } from "@/lib/rag/retrieve";
 import type { ChatResponse, ChatSource } from "@/lib/types";
 
 // Every question this app exists for compares the résumé against jobs, so a
 // single global top-k risks returning one side only (the query "my
 // experience..." is naturally closer to CV text). Instead we retrieve the
 // top chunks from each side with one query embedding.
+//
+// The job side is budgeted PER JOB, not globally: a global top-k lets the
+// most similar posting monopolise every slot once JDs span multiple chunks,
+// so comparative answers would silently ignore some jobs. When the client
+// scopes the question to one job (jobDocumentId), that job gets the whole
+// budget instead.
 const RESUME_K = 4;
-const JOB_K = 4;
+const PER_JOB_K = 2;
+const SCOPED_JOB_K = 4;
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -24,7 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { question } = (body ?? {}) as Record<string, unknown>;
+  const { question, jobDocumentId } = (body ?? {}) as Record<string, unknown>;
   if (typeof question !== "string" || !question.trim()) {
     return NextResponse.json(
       { error: "`question` must be a non-empty string" },
@@ -37,18 +44,47 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+  if (
+    jobDocumentId !== undefined &&
+    (typeof jobDocumentId !== "number" || !Number.isInteger(jobDocumentId))
+  ) {
+    return NextResponse.json(
+      { error: "`jobDocumentId` must be an integer document id" },
+      { status: 400 },
+    );
+  }
 
   const queryId = randomUUID();
   const startedAt = Date.now();
   const trimmed = question.trim();
 
   try {
+    const jobDocs = await listJobDocuments();
+    if (jobDocumentId !== undefined && !jobDocs.some((d) => d.id === jobDocumentId)) {
+      return NextResponse.json(
+        { error: "`jobDocumentId` does not match a job document" },
+        { status: 400 },
+      );
+    }
+
     const queryEmbedding = await embedQuery(trimmed);
-    const [resumeChunks, jobChunks] = await Promise.all([
+    const [resumeChunks, ...perJobChunks] = await Promise.all([
       retrieveByEmbedding(queryEmbedding, { docType: "resume", k: RESUME_K }),
-      retrieveByEmbedding(queryEmbedding, { docType: "job", k: JOB_K }),
+      ...(jobDocumentId !== undefined
+        ? [
+            retrieveByEmbedding(queryEmbedding, {
+              documentId: jobDocumentId,
+              k: SCOPED_JOB_K,
+            }),
+          ]
+        : jobDocs.map((d) =>
+            retrieveByEmbedding(queryEmbedding, {
+              documentId: d.id,
+              k: PER_JOB_K,
+            }),
+          )),
     ]);
-    const retrieved = [...resumeChunks, ...jobChunks];
+    const retrieved = [...resumeChunks, ...perJobChunks.flat()];
 
     if (retrieved.length === 0) {
       return NextResponse.json(

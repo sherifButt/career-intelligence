@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { describe, expect, it } from "vitest";
-import { retrieve } from "@/lib/rag/retrieve";
+import { listJobDocuments, retrieve } from "@/lib/rag/retrieve";
 
 // Integration test: needs the docker postgres up, the corpus seeded, and an
 // OpenAI key (it embeds two queries, ~$0.000001). Skips itself cleanly when
@@ -35,5 +35,17 @@ describe.skipIf(!hasEnv)("retrieve (integration)", () => {
     });
     expect(jobsOnly.length).toBeGreaterThan(0);
     expect(jobsOnly.every((c) => c.docType === "job")).toBe(true);
+  }, 30_000);
+
+  it("scopes retrieval to a single document", async () => {
+    const [job] = await listJobDocuments();
+    expect(job).toBeDefined();
+
+    const scoped = await retrieve("required skills for the role", {
+      documentId: job.id,
+      k: 5,
+    });
+    expect(scoped.length).toBeGreaterThan(0);
+    expect(scoped.every((c) => c.documentName === job.name)).toBe(true);
   }, 30_000);
 });

@@ -11,6 +11,7 @@ Rules:
 - Cite the excerpts you used inline, using their labels, e.g. [S1] or [S2][S4].
 - If the context does not contain enough information to answer, say exactly that and suggest what document or detail is missing. Never guess.
 - Be direct and specific. When asked about gaps, name the missing skills; when asked about alignment, point to concrete evidence from the résumé.
+- If the context contains more than one job description and the question is not about a single job, organise the answer per job — name each job document and address it separately, so no posting is silently ignored.
 - Use short paragraphs or bullet points. No preamble.`;
 
 export interface GroundedPrompt {
