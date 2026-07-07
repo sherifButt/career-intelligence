@@ -1,6 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getLlmProvider } from "@/lib/llm/provider";
+import { estimateCostUSD } from "@/lib/observability/cost";
+import { logQuery } from "@/lib/observability/log";
 import { embedQuery } from "@/lib/rag/embed";
+import { REFUSAL_MESSAGE, shouldRefuse } from "@/lib/rag/guardrail";
 import { buildGroundedPrompt } from "@/lib/rag/prompt";
 import { retrieveByEmbedding } from "@/lib/rag/retrieve";
 import type { ChatResponse, ChatSource } from "@/lib/types";
@@ -34,9 +38,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const queryId = randomUUID();
   const startedAt = Date.now();
+  const trimmed = question.trim();
+
   try {
-    const queryEmbedding = await embedQuery(question.trim());
+    const queryEmbedding = await embedQuery(trimmed);
     const [resumeChunks, jobChunks] = await Promise.all([
       retrieveByEmbedding(queryEmbedding, { docType: "resume", k: RESUME_K }),
       retrieveByEmbedding(queryEmbedding, { docType: "job", k: JOB_K }),
@@ -50,12 +57,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const prompt = buildGroundedPrompt(question.trim(), retrieved);
-    const completion = await getLlmProvider().complete([
-      { role: "system", content: prompt.system },
-      { role: "user", content: prompt.user },
-    ]);
-
     const sources: ChatSource[] = retrieved.map((c, i) => ({
       label: `S${i + 1}`,
       documentName: c.documentName,
@@ -65,14 +66,65 @@ export async function POST(req: NextRequest) {
       score: c.score,
     }));
 
+    // Guardrail: weak retrieval → refuse before spending LLM tokens. The
+    // sources (with their low scores) are still returned so the refusal is
+    // inspectable, not a black box.
+    if (shouldRefuse(retrieved)) {
+      const response: ChatResponse = {
+        answer: REFUSAL_MESSAGE,
+        sources,
+        guardrailTriggered: true,
+        latencyMs: Date.now() - startedAt,
+        tokenUsage: { input: 0, output: 0 },
+        estimatedCostUSD: 0,
+      };
+      logQuery({
+        queryId,
+        question: trimmed,
+        retrievalScores: retrieved.map((c) => c.score),
+        guardrailTriggered: true,
+        latencyMs: response.latencyMs,
+        tokensIn: 0,
+        tokensOut: 0,
+        estimatedCostUSD: 0,
+        model: "none",
+      });
+      return NextResponse.json(response);
+    }
+
+    const prompt = buildGroundedPrompt(trimmed, retrieved);
+    const completion = await getLlmProvider().complete([
+      { role: "system", content: prompt.system },
+      { role: "user", content: prompt.user },
+    ]);
+
+    // Chat-model cost only; the query-embedding cost is ~1000x smaller and
+    // would show as $0.0000 anyway.
+    const estimatedCost = estimateCostUSD(
+      completion.model,
+      completion.tokensIn,
+      completion.tokensOut,
+    );
+
     const response: ChatResponse = {
       answer: completion.text,
       sources,
       guardrailTriggered: false,
       latencyMs: Date.now() - startedAt,
       tokenUsage: { input: completion.tokensIn, output: completion.tokensOut },
-      estimatedCostUSD: 0, // wired up with the observability pass
+      estimatedCostUSD: estimatedCost,
     };
+    logQuery({
+      queryId,
+      question: trimmed,
+      retrievalScores: retrieved.map((c) => c.score),
+      guardrailTriggered: false,
+      latencyMs: response.latencyMs,
+      tokensIn: completion.tokensIn,
+      tokensOut: completion.tokensOut,
+      estimatedCostUSD: estimatedCost,
+      model: completion.model,
+    });
     return NextResponse.json(response);
   } catch (err) {
     console.error("[chat] failed:", err);
