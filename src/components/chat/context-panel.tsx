@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/tooltip'
 import { Check, File, FileText, Target, Trash2, X } from 'lucide-react'
 import type { JobAnalysis } from '@/lib/db/schema'
+import { AddDocumentDialog } from './add-document-dialog'
 
 export interface DocumentSummary {
    id: number
@@ -77,12 +78,17 @@ export function ContextPanel({
    }
 
    return (
-      <aside className='hidden w-92 shrink-0 flex-col border-l bg-muted/30 lg:flex'>
+      <aside className='hidden w-80 shrink-0 flex-col border-l bg-muted/30 lg:flex'>
          <div className='flex items-center justify-between px-4 pb-2 pt-4'>
             <h2 className='text-sm font-semibold'>Context</h2>
-            <Badge variant='default' className='text-[11px]'>
-               {documents.length} file{documents.length === 1 ? '' : 's'}
-            </Badge>
+            <div className='flex items-center gap-1'>
+               <Badge variant='default' className='text-[11px]'>
+                  {documents.length} file{documents.length === 1 ? '' : 's'}
+               </Badge>
+               {/* Same dialog as the chat input's 📎 — a second entry point
+                   where the corpus is actually looked at. */}
+               <AddDocumentDialog onAdded={onDocumentsChanged} />
+            </div>
          </div>
          <ScrollArea className='min-h-0 flex-1 px-2 py-2'>
             {loading ? (
