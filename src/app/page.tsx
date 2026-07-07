@@ -14,7 +14,7 @@ import {
 } from "@/components/chat/document-sidebar";
 import { SourcesPanel } from "@/components/chat/sources-panel";
 import type { ChatResponse } from "@/lib/types";
-import { SendHorizontal, ShieldAlert } from "lucide-react";
+import { Check, Copy, SendHorizontal, ShieldAlert, Square } from "lucide-react";
 
 // The assignment's example queries, one click away — lets a reviewer demo
 // the app without composing a question.
@@ -45,6 +45,7 @@ export default function ChatPage() {
   // null = compare against all jobs; a document id = analyse that job only.
   const [jobScope, setJobScope] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const jobDocs = documents.filter((d) => d.docType === "job");
 
   function loadDocuments() {
@@ -74,6 +75,8 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setInput("");
     setPending(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -82,18 +85,31 @@ export default function ChatPage() {
           question: trimmed,
           ...(effectiveScope !== null && { jobDocumentId: effectiveScope }),
         }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `Request failed (${res.status})`);
       setMessages((prev) => [...prev, { role: "assistant", ...data }]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
-      // Drop the orphaned user message so retrying doesn't double it up.
+      const aborted = err instanceof DOMException && err.name === "AbortError";
+      if (!aborted) {
+        toast.error(err instanceof Error ? err.message : "Something went wrong");
+      }
+      // Drop the orphaned user message and restore the input so retrying
+      // (or rephrasing after a stop) doesn't double it up.
       setMessages((prev) => prev.slice(0, -1));
       setInput(trimmed);
     } finally {
+      abortRef.current = null;
       setPending(false);
     }
+  }
+
+  // Cancels the client request. The server-side LLM call may still run to
+  // completion (and cost its tokens) — acceptable for this scope; noted in
+  // the backlog next to streaming.
+  function stop() {
+    abortRef.current?.abort();
   }
 
   return (
@@ -105,7 +121,10 @@ export default function ChatPage() {
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <ScrollArea className="flex-1">
+        {/* min-h-0 lets this flex child actually shrink — without it the
+            viewport grows past the screen and long chats (e.g. expanded
+            sources) become unreachable. */}
+        <ScrollArea className="min-h-0 flex-1">
           <div className="mx-auto max-w-3xl px-4 py-8">
             {messages.length === 0 ? (
               <EmptyState onPick={ask} disabled={pending} />
@@ -163,10 +182,22 @@ export default function ChatPage() {
                 aria-label="Your question"
                 disabled={pending}
               />
-              <Button type="submit" disabled={pending || !input.trim()} size="icon">
-                <SendHorizontal className="size-4" />
-                <span className="sr-only">Send</span>
-              </Button>
+              {pending ? (
+                <Button
+                  type="button"
+                  onClick={stop}
+                  size="icon"
+                  variant="outline"
+                  aria-label="Stop generating"
+                >
+                  <Square className="size-3.5 fill-current" />
+                </Button>
+              ) : (
+                <Button type="submit" disabled={!input.trim()} size="icon">
+                  <SendHorizontal className="size-4" />
+                  <span className="sr-only">Send</span>
+                </Button>
+              )}
             </form>
           </div>
         </div>
@@ -176,6 +207,18 @@ export default function ChatPage() {
 }
 
 function AssistantBubble({ message }: { message: AssistantMessage }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyAnswer() {
+    try {
+      await navigator.clipboard.writeText(message.answer);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Could not access the clipboard");
+    }
+  }
+
   return (
     <div className="max-w-[95%]">
       {message.guardrailTriggered && (
@@ -187,11 +230,27 @@ function AssistantBubble({ message }: { message: AssistantMessage }) {
       <div className="rounded-2xl border bg-card px-4 py-3 text-sm [&_li]:mt-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5">
         <ReactMarkdown>{message.answer}</ReactMarkdown>
       </div>
-      <p className="mt-1.5 font-mono text-[11px] text-muted-foreground">
-        {(message.latencyMs / 1000).toFixed(1)}s · {message.tokenUsage.input}{" "}
-        in / {message.tokenUsage.output} out · ~$
-        {message.estimatedCostUSD.toFixed(4)}
-      </p>
+      <div className="mt-1.5 flex items-center gap-2">
+        <p className="font-mono text-[11px] text-muted-foreground">
+          {(message.latencyMs / 1000).toFixed(1)}s · {message.tokenUsage.input}{" "}
+          in / {message.tokenUsage.output} out · ~$
+          {message.estimatedCostUSD.toFixed(4)}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="size-6 text-muted-foreground"
+          onClick={copyAnswer}
+          aria-label={copied ? "Copied" : "Copy answer"}
+        >
+          {copied ? (
+            <Check className="size-3.5 text-green-600" />
+          ) : (
+            <Copy className="size-3.5" />
+          )}
+        </Button>
+      </div>
       {message.sources.length > 0 && <SourcesPanel sources={message.sources} />}
     </div>
   );

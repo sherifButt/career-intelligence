@@ -71,7 +71,7 @@ export function DocumentSidebar({
         </p>
       </div>
       <Separator />
-      <ScrollArea className="flex-1 px-4 py-4">
+      <ScrollArea className="min-h-0 flex-1 px-4 py-4">
         {loading ? (
           <div className="space-y-2">
             <Skeleton className="h-8 w-full" />
