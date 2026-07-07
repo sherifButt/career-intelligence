@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { File, FileText, Trash2 } from "lucide-react";
+import { Check, File, FileText, Trash2 } from "lucide-react";
 import type { JobAnalysis } from "@/lib/db/schema";
 
 export interface DocumentSummary {
@@ -201,7 +201,15 @@ function scoreColor(score: number): string {
 }
 
 const RISK_LABEL = { low: "low risk", medium: "med risk", high: "high risk" };
-const SENIORITY_LABEL = { under: "under", fit: "fit", over: "over" };
+
+// Risk owns the color channel (traffic light); seniority stays quiet — a
+// green check when "fit", a neutral word only when it needs reading.
+const RISK_CLASSES = {
+  low: "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-400",
+  medium:
+    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
+  high: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400",
+};
 
 function MatchRow({ analysis }: { analysis: JobAnalysis }) {
   return (
@@ -217,14 +225,28 @@ function MatchRow({ analysis }: { analysis: JobAnalysis }) {
         {analysis.matchScore}%
       </span>
       <Badge
-        variant={analysis.risk === "high" ? "destructive" : "outline"}
-        className="px-1.5 text-[10px] font-normal"
+        variant="outline"
+        className={`px-1.5 text-[10px] font-normal ${RISK_CLASSES[analysis.risk]}`}
       >
         {RISK_LABEL[analysis.risk]}
       </Badge>
-      <Badge variant="outline" className="px-1.5 text-[10px] font-normal">
-        {SENIORITY_LABEL[analysis.seniority]}
-      </Badge>
+      {analysis.seniority === "fit" ? (
+        <span
+          className="flex items-center text-green-600 dark:text-green-500"
+          title="Seniority: fit for the level this role is pitched at"
+        >
+          <Check className="size-3.5" strokeWidth={3} />
+          <span className="sr-only">seniority: fit</span>
+        </span>
+      ) : (
+        <Badge
+          variant="outline"
+          className="px-1.5 text-[10px] font-normal"
+          title={`Seniority: ${analysis.seniority}-qualified for this role`}
+        >
+          {analysis.seniority}
+        </Badge>
+      )}
     </div>
   );
 }
