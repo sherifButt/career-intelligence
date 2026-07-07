@@ -1,0 +1,76 @@
+QA ENGINEER
+ 
+Location: Remote | Type: Contract
+
+About Newpage Solutions
+
+Newpage Solutions is a global digital health innovation company helping people live longer, healthier lives. We partner with life sciences organisations which include, pharmaceutical, biotech and healthcare leaders, to build transformative AI and data driven technologies addressing real-world health challenges.
+ 
+From strategy and research to UX design and agile development, we deliver and validate impactful solutions using lean, human-centered practices.
+
+We are proud to be a ‘Great Place to Work®’ certified company for the last three consecutive years. We also hold a top Glassdoor rating and are named among the "Top 50 Most Promising Healthcare Solution Providers" by CIOReview. As an organisation, we foster creativity, continuous learning and inclusivity, creating an environment where bold ideas thrive and make a measurable difference in people’s lives.
+
+Your Mission
+
+We are hiring QA Engineers to validate that AI products do what they're meant to do—and don't do what they shouldn't.
+AI outputs aren't deterministic; testing them isn't either. You will design golden-question suites, hunt hallucinations, verify evidence citations, and confirm guardrails hold under combinatorial pressure. You will build coverage that survives an LLM swap, a prompt change, or a new retrieval index.
+
+You sit close to the engineers building the systems you test, and you raise the quality bar by asking questions the model itself can't answer. You treat AI as the substrate of the products you validate, and you stay current on how these systems break.
+
+What You’ll Do
+
+Plan And Design
+Build test plans for AI products across large combinatorial matrices: input variants, user roles, content states, deployment surfaces.
+Maintain golden-question test suites that catch regressions when models, prompts, retrieval, or content change.
+Design coverage for the things AI products specifically get wrong: hallucinations, citation drift, prompt injection, context bleed, guardrail bypass, role escalation, stale or unapproved content surfacing where it shouldn't.
+Translate ambiguous quality requirements into concrete, repeatable test cases—especially where audit trails, access controls, and content provenance matter.
+Executive & Design
+Run structured test passes across web UIs and APIs; investigate failures deeply enough to give engineers a useful starting point, not just a screenshot.
+Validate evidence citations point to the right sources and that "pending review" or restricted content stays excluded from AI responses where the rules require it.
+Verify role-based access at the UI and API layers—users see what they should and nothing more.
+Verify data integrity using read-only SQL queries; cross-check what the UI shows against what the database holds.
+Exercise APIs directly via Postman, Insomnia, or curl; read OpenAPI specs and form requests without help.
+File defects that are clear, reproducible, and ranked—structured enough that an engineer can act without a meeting.
+Sustain Coverage
+Maintain regression coverage as products evolve: prompts change, retrieval indexes update, models get swapped, content gets added.
+Partner with engineers on evaluation rubrics, golden datasets, and acceptance criteria for AI behaviour—then verify the criteria actually hold in production.
+Stay current on AI/LLM evaluation tooling and apply what's useful: golden datasets, regression rubrics, hallucination scoring, structured eval frameworks.
+Maintain test documentation that survives team turnover: clear, structured, and findable.
+What You Bring
+5+ years manual and automation QA experience in product environments, production-grade.
+Hands-on experience testing AI / LLM-based products: output validation, hallucination detection, edge-case coverage, prompt injection awareness.
+Strong test-planning skills for large combinatorial test matrices.
+Hands-on with test management tooling: TestRail, Zephyr Scale, Xray, or equivalent.
+API testing fluency: Postman or Insomnia; comfortable reading OpenAPI/Swagger specs and exercising endpoints directly.
+Browser-based debugging skills: Chrome DevTools (Network, Console, Application), cross-browser verification.
+Bug tracking and workflow tooling: Jira, Linear, or equivalent.
+SQL basics: read-only queries to verify data state in PostgreSQL or equivalent.
+Documentation discipline: clear, structured test plans and defect reports in Confluence, Notion, or equivalent.
+Comfort with enterprise content workflows, audit-trail verification, and role-based access checks.
+A clear-eyed view of where current AI tooling helps and where it falls short.
+Curiosity, persistence, and a willingness to dig past the surface symptom into the underlying cause.
+ 
+Bonus Skills / Experience
+Understanding of MLOps, model serving, scaling and monitoring workflows (e.g., BentoML, MLflow, Vertex AI, AWS Sagemaker)
+Exposure to evaluation tools (Ragas, Promptfoo, DeepEval, LangSmith)—read-only or interpretive use is fine.
+Automation experience with Playwright, Cypress, or equivalent—even if the role is primarily manual.
+Browser Stack or similar cross-browser/device platforms.
+GDPR-style data handling verification experience.
+Pharma, healthcare, or other regulated-industry exposure.
+Familiarity with EU AI Act or similar AI governance and compliance frameworks.
+What We Offer
+
+At Newpage, we’re building a company that works smart and grows with agility, where driven individuals come together to do work that matters. We offer:
+A people-first culture - Supportive peers, open communication and a strong sense of belonging
+Smart, purposeful collaboration - Work with talented colleagues to create technologies that solve meaningful business challenges
+Balance that lasts - We respect your time and support a healthy integration of work and life
+Room to grow - Opportunities for learning, leadership and career development, shaped around you
+Meaningful rewards - Competitive compensation that recognises both contribution and potential
+
+Ready to Apply?
+
+Let’s build the future of health together. Apply below or reach out to:
+shilpa.shetty@newpage.io
+More about Newpage
+Newpage is a digital health solutions company. We devote ourselves to advancing the quality of life by enhancing health and optimizing the longevity of people. We do this by, passionately building futuristic technologies for global organizations across the healthcare ecosystem. We partake at every stage from problem definition, strategy & service design, user research, UX design, and agile software development – utilizing lean practices to deliver and validate highly innovative digital health solutions that drive user value and business transformation.
+Newpage is recognized by ‘CIO’s Review’ as “Top 50 Promising Healthcare Solution Providers” and Great Place to Work Certified (GPTW) 2023 & 2024.

@@ -69,7 +69,10 @@ function CitationChip({ source }: { source: ChatSource }) {
         label={source.label.replace(/^S/, "")}
         className="h-4 min-w-4 cursor-default justify-center px-1 align-super text-[10px] leading-none"
       />
-      <InlineCitationCardBody className="p-4">
+      {/* `dark` flips the theme variables for this subtree only — the card
+          renders inverted (dark) over the light page, matching the app's
+          tooltip treatment for hover-born surfaces. */}
+      <InlineCitationCardBody className="dark bg-popover p-4 text-popover-foreground">
         <InlineCitationSource
           title={source.documentName}
           description={`chunk ${source.chunkIndex} · similarity ${source.score.toFixed(3)}`}

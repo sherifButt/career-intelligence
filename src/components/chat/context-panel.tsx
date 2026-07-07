@@ -16,6 +16,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Check, File, FileText, Trash2 } from "lucide-react";
 import type { JobAnalysis } from "@/lib/db/schema";
 
@@ -225,53 +231,76 @@ function gapClasses(gaps: number): string {
   return "border-red-200/70 text-red-700 dark:border-red-900 dark:text-red-500";
 }
 
+const SENIORITY_TOOLTIP = {
+  fit: "Experience alignment — fit for the level this role is pitched at",
+  under: "Experience alignment — under-qualified for the level this role is pitched at",
+  over: "Experience alignment — over-qualified for the level this role is pitched at",
+};
+
 // The three metrics deliberately echo the assignment's own vocabulary —
-// fit, skill gaps, experience alignment. The recruiter-lens risk sentence
-// survives in the tooltip.
+// fit, skill gaps, experience alignment. Each carries its own tooltip; the
+// recruiter-lens risk sentence lives in the gaps tooltip.
 function MatchStats({ analysis }: { analysis: JobAnalysis }) {
   const gaps = gapCount(analysis);
   return (
-     <span
-        className='inline-flex flex-wrap items-center gap-1.5'
-        title={
-          [
-            analysis.mustHaves && `must-haves met: ${analysis.mustHaves}`,
-            analysis.riskNote,
-          ]
-            .filter(Boolean)
-            .join(" — ") || undefined
-        }>
-        <span className='flex items-center gap-1 text-xs font-normal tabular-nums text-muted-foreground'>
-           <span
-              className={`size-2 rounded-full ${scoreColor(analysis.matchScore)}`}
-              aria-hidden
-           />
-           {analysis.matchScore}% fit
+     <TooltipProvider>
+        <span className='inline-flex flex-wrap items-center gap-1.5'>
+           <Tooltip>
+              <TooltipTrigger
+                 render={
+                    <span className='flex cursor-default items-center gap-1 text-xs font-normal tabular-nums text-muted-foreground' />
+                 }>
+                 <span
+                    className={`size-2 rounded-full ${scoreColor(analysis.matchScore)}`}
+                    aria-hidden
+                 />
+                 {analysis.matchScore}% fit
+              </TooltipTrigger>
+              <TooltipContent>
+                 Fit — overall skills &amp; experience match for this role
+                 (median of 3 screens)
+              </TooltipContent>
+           </Tooltip>
+           {gaps !== null && (
+              <Tooltip>
+                 <TooltipTrigger
+                    render={
+                       <Badge
+                          variant='outline'
+                          className={`cursor-default px-1.5 text-[10px] font-normal ${gapClasses(gaps)}`}
+                       />
+                    }>
+                    {gaps} gap{gaps === 1 ? '' : 's'}
+                 </TooltipTrigger>
+                 <TooltipContent className='max-w-60'>
+                    Skill gaps — must-haves evidenced: {analysis.mustHaves}
+                    {analysis.riskNote ? `. ${analysis.riskNote}` : ''}
+                 </TooltipContent>
+              </Tooltip>
+           )}
+           <Tooltip>
+              <TooltipTrigger
+                 render={
+                    <span className='flex cursor-default items-center gap-0.5 text-muted-foreground' />
+                 }>
+                 {analysis.seniority === 'fit' ? (
+                    <>
+                       <Check className='size-3.5' strokeWidth={2} />
+                       <span className='text-[10px]'>exp</span>
+                       <span className='sr-only'>experience alignment: fit</span>
+                    </>
+                 ) : (
+                    <Badge
+                       variant='outline'
+                       className='px-1.5 text-[10px] font-normal'>
+                       {analysis.seniority}
+                    </Badge>
+                 )}
+              </TooltipTrigger>
+              <TooltipContent>{SENIORITY_TOOLTIP[analysis.seniority]}</TooltipContent>
+           </Tooltip>
         </span>
-        {gaps !== null && (
-           <Badge
-              variant='outline'
-              className={`px-1.5 text-[10px] font-normal ${gapClasses(gaps)}`}>
-              {gaps} gap{gaps === 1 ? '' : 's'}
-           </Badge>
-        )}
-        {analysis.seniority === 'fit' ? (
-           <span
-              className='flex items-center gap-0.5 text-muted-foreground'
-              title='Experience alignment: fit for the level this role is pitched at'>
-              <Check className='size-3.5' strokeWidth={2} />
-              <span className='text-[10px]'>exp</span>
-              <span className='sr-only'>experience alignment: fit</span>
-           </span>
-        ) : (
-           <Badge
-              variant='outline'
-              className='px-1.5 text-[10px] font-normal'
-              title={`Experience alignment: ${analysis.seniority}-qualified for this role`}>
-              {analysis.seniority}
-           </Badge>
-        )}
-     </span>
+     </TooltipProvider>
   )
 }
 
