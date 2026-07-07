@@ -169,7 +169,7 @@ function DocList({
         >
           <DocIcon name={doc.name} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-normal" title={doc.name}>
+            <p className="truncate text-xs font-normal" title={doc.name}>
               {doc.name}
             </p>
             <div className="flex flex-wrap justify-between items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
