@@ -65,9 +65,10 @@ export function AnswerMarkdown({
 function CitationChip({ source }: { source: ChatSource }) {
   return (
     <InlineCitationCard>
+      {/* Dark like the card it opens — hover-born surfaces share one look. */}
       <InlineCitationCardTrigger
         label={source.label.replace(/^S/, "")}
-        className="h-4 min-w-4 cursor-default justify-center px-1 align-super text-[10px] leading-none"
+        className="h-4 min-w-4 cursor-default justify-center border-transparent bg-foreground px-1 align-super text-[10px] leading-none text-background hover:bg-foreground/85"
       />
       {/* `dark` flips the theme variables for this subtree only — the card
           renders inverted (dark) over the light page, matching the app's

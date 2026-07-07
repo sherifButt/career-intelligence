@@ -81,11 +81,11 @@ Key behaviours you can verify in the UI:
   match a job's wording.
 - **Job match screening** — every job gets a one-time recruiter-style LLM screen at ingest,
   surfaced in the assignment's own vocabulary: **fit** (0–100%, anchored rubric, median of 3
-  samples for stability), **skill gaps** (count of must-have requirements the résumé doesn't
-  evidence), and **experience alignment** (✓ / under / over). The screen's one-line biggest-risk
-  reason shows on hover. The Context panel splits résumé from jobs and ranks jobs
-  best-fit-first; re-ingesting the résumé re-screens every job; uploading a JD toasts its
-  screen immediately.
+  samples for stability), **skill gaps** (count of unmet must-haves — hovering lists the
+  actual missing skills as bullets), **experience alignment** (shown only as an under/over
+  warning), and an **apply verdict** (Yes/No — is this application worth making as-is). The
+  Context panel splits résumé from jobs and ranks jobs best-fit-first; re-ingesting the résumé
+  re-screens every job; uploading a JD toasts its screen immediately.
 - **Contextual follow-ups** — after each answer, the quick-question row regenerates: a small
   LLM call (fired after the answer renders, so it adds no latency) predicts the four most
   useful next questions from the last exchange and the loaded documents. Falls back to the
@@ -206,6 +206,6 @@ tests/                       # retrieval integration test (self-skipping)
 | ![Empty state](docs/screenshots/empty-state.png) | ![Answer with sources](docs/screenshots/chat-answer-with-sources.png) |
 | ![Guardrail refusal](docs/screenshots/guardrail-refusal.png) | ![Job-scoped answer](docs/screenshots/job-scoped-answer.png) |
 | ![Upload dialog](docs/screenshots/upload-dialog.png) | ![Inline citations](docs/screenshots/inline-citations.png) |
-| ![Contextual follow-up suggestions](docs/screenshots/contextual-suggestions.png) | |
+| ![Contextual follow-up suggestions](docs/screenshots/contextual-suggestions.png) | ![Job stats tooltip](docs/screenshots/job-stats-tooltip.png) |
 
 <!-- SHERIF: if time permits, record a short demo video and link it here. -->

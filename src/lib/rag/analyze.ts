@@ -27,11 +27,13 @@ Work through this, in order, before answering:
    Hard rule: if the candidate's primary stack differs from the role's PRIMARY skill, the score must be below 70 — no matter how strong the rest is.
 
 Return ONLY a JSON object, no prose, exactly this shape:
-{"matchScore": <integer 0-100>, "mustHaves": "<met>/<total>", "risk": "low"|"medium"|"high", "riskNote": "<one sentence, max 90 chars, naming the single biggest screening-out risk>", "seniority": "under"|"fit"|"over"}
+{"matchScore": <integer 0-100>, "mustHaves": "<met>/<total>", "missing": ["<2-5 word label per unmet must-have, max 6 items>"], "risk": "low"|"medium"|"high", "riskNote": "<one sentence, max 90 chars, naming the single biggest screening-out risk>", "seniority": "under"|"fit"|"over", "apply": "yes"|"no"}
 
 Definitions:
+- missing: the unmet/partial must-haves from step 3, as short skill labels ("AWS certification", "Kubernetes in production"). Empty array if all met.
 - risk: likelihood an HR screen rejects the application (missing must-haves, domain mismatch, certifications). Tie it to the score: below 50 is never "low" risk.
 - seniority: candidate's level relative to the level the role is pitched at ("over" = overqualified).
+- apply: your overall verdict — should the candidate spend time applying as-is? "yes" when there's a realistic chance (roughly: score 60+ and no single disqualifying gap); otherwise "no".
 Judge only from the two texts. Be honest, not kind. Use the full range — identical scores for different jobs almost always means you failed to discriminate.`;
 
 // Enough context for a screen without blowing the budget on huge documents.
@@ -126,6 +128,12 @@ function parseAnalysis(text: string): JobAnalysis | null {
     ) {
       return null;
     }
+    const missing = Array.isArray(raw.missing)
+      ? raw.missing
+          .filter((m): m is string => typeof m === "string" && m.trim().length > 0)
+          .map((m) => m.trim().slice(0, 60))
+          .slice(0, 8)
+      : [];
     return {
       matchScore: Math.max(0, Math.min(100, Math.round(matchScore))),
       risk,
@@ -134,6 +142,8 @@ function parseAnalysis(text: string): JobAnalysis | null {
       ...(typeof raw.mustHaves === "string" && /^\d+\/\d+$/.test(raw.mustHaves)
         ? { mustHaves: raw.mustHaves }
         : {}),
+      ...(missing.length > 0 ? { missing } : {}),
+      ...(raw.apply === "yes" || raw.apply === "no" ? { apply: raw.apply } : {}),
     };
   } catch {
     return null;

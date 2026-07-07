@@ -21,6 +21,10 @@ export interface JobAnalysis {
   seniority: "under" | "fit" | "over";
   /** Must-have requirements met, e.g. "6/9" — anchors the score. */
   mustHaves?: string;
+  /** Short labels of the unmet must-haves, e.g. "AWS certification". */
+  missing?: string[];
+  /** Overall verdict: is this application worth making as-is? */
+  apply?: "yes" | "no";
 }
 
 // Mirrors db/init.sql, which is the actual source of truth (it runs on first

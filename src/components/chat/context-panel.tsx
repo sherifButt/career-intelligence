@@ -237,6 +237,11 @@ const SENIORITY_TOOLTIP = {
   over: "Experience alignment — over-qualified for the level this role is pitched at",
 };
 
+const VERDICT_CLASSES = {
+  yes: "border-green-200/70 text-green-700 dark:border-green-900 dark:text-green-500",
+  no: "border-red-200/70 text-red-700 dark:border-red-900 dark:text-red-500",
+};
+
 // The three metrics deliberately echo the assignment's own vocabulary —
 // fit, skill gaps, experience alignment. Each carries its own tooltip; the
 // recruiter-lens risk sentence lives in the gaps tooltip.
@@ -272,33 +277,60 @@ function MatchStats({ analysis }: { analysis: JobAnalysis }) {
                     }>
                     {gaps} gap{gaps === 1 ? '' : 's'}
                  </TooltipTrigger>
-                 <TooltipContent className='max-w-60'>
-                    Skill gaps — must-haves evidenced: {analysis.mustHaves}
-                    {analysis.riskNote ? `. ${analysis.riskNote}` : ''}
+                 <TooltipContent className='max-w-64 flex-col items-start'>
+                    <p>Skill gaps — must-haves evidenced: {analysis.mustHaves}</p>
+                    {analysis.missing && analysis.missing.length > 0 ? (
+                       <ul className='mt-1 list-disc pl-4'>
+                          {analysis.missing.map((m) => (
+                             <li key={m}>{m}</li>
+                          ))}
+                       </ul>
+                    ) : analysis.riskNote ? (
+                       <p className='mt-1'>{analysis.riskNote}</p>
+                    ) : null}
                  </TooltipContent>
               </Tooltip>
            )}
-           <Tooltip>
-              <TooltipTrigger
-                 render={
-                    <span className='flex cursor-default items-center gap-0.5 text-muted-foreground' />
-                 }>
-                 {analysis.seniority === 'fit' ? (
-                    <>
-                       <Check className='size-3.5' strokeWidth={2} />
-                       <span className='text-[10px]'>exp</span>
-                       <span className='sr-only'>experience alignment: fit</span>
-                    </>
-                 ) : (
-                    <Badge
-                       variant='outline'
-                       className='px-1.5 text-[10px] font-normal'>
-                       {analysis.seniority}
-                    </Badge>
-                 )}
-              </TooltipTrigger>
-              <TooltipContent>{SENIORITY_TOOLTIP[analysis.seniority]}</TooltipContent>
-           </Tooltip>
+           {/* Seniority only speaks when it's a warning — "fit" is implied
+               by the verdict, so the old ✓ was redundant. */}
+           {analysis.seniority !== 'fit' && (
+              <Tooltip>
+                 <TooltipTrigger
+                    render={
+                       <Badge
+                          variant='outline'
+                          className='cursor-default px-1.5 text-[10px] font-normal'
+                       />
+                    }>
+                    {analysis.seniority}
+                 </TooltipTrigger>
+                 <TooltipContent>{SENIORITY_TOOLTIP[analysis.seniority]}</TooltipContent>
+              </Tooltip>
+           )}
+           {analysis.apply && (
+              <Tooltip>
+                 <TooltipTrigger
+                    render={
+                       <Badge
+                          variant='outline'
+                          className={`cursor-default px-1.5 text-[10px] font-medium ${VERDICT_CLASSES[analysis.apply]}`}
+                       />
+                    }>
+                    {analysis.apply === 'yes' ? (
+                       <>
+                          <Check className='size-3' strokeWidth={2.5} /> Yes
+                       </>
+                    ) : (
+                       'No'
+                    )}
+                 </TooltipTrigger>
+                 <TooltipContent className='max-w-60'>
+                    Verdict — {analysis.apply === 'yes'
+                       ? 'worth applying as-is: realistic chance despite any gaps'
+                       : 'not worth applying as-is: close the key gaps first'}
+                 </TooltipContent>
+              </Tooltip>
+           )}
         </span>
      </TooltipProvider>
   )
