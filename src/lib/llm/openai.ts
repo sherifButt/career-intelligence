@@ -27,8 +27,9 @@ export class OpenAiProvider implements LlmProvider {
     messages: ChatMessage[],
     options: CompletionOptions = {},
   ): Promise<CompletionResult> {
+    const model = options.model ?? this.model;
     const res = await this.client.chat.completions.create({
-      model: this.model,
+      model,
       messages,
       // Low temperature: this is grounded analysis, not creative writing —
       // we want the same question to get roughly the same answer.
@@ -39,7 +40,7 @@ export class OpenAiProvider implements LlmProvider {
       text: res.choices[0]?.message?.content ?? "",
       tokensIn: res.usage?.prompt_tokens ?? 0,
       tokensOut: res.usage?.completion_tokens ?? 0,
-      model: this.model,
+      model,
     };
   }
 }

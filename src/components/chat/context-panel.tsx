@@ -73,10 +73,10 @@ export function ContextPanel({
   }
 
   return (
-    <aside className="hidden w-79 shrink-0 flex-col border-l bg-muted/30 lg:flex">
+    <aside className="hidden w-85 shrink-0 flex-col border-l bg-muted/30 lg:flex">
       <div className="flex items-center justify-between px-4 pb-2 pt-4">
         <h2 className="text-sm font-semibold">Context</h2>
-        <Badge variant="secondary" className="text-[11px]">
+        <Badge variant="default" className="text-[11px]">
           {documents.length} file{documents.length === 1 ? "" : "s"}
         </Badge>
       </div>
@@ -178,7 +178,7 @@ function DocList({
             <p className="truncate text-xs font-normal" title={doc.name}>
               {doc.name}
             </p>
-            <div className="flex flex-wrap justify-between items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+            <div className="flex flex-wrap justify-between items-center gap-x-1.5 gap-y-.5 text-[10px] text-muted-foreground">
               <span>
                 {formatSize(doc.sizeBytes)} · {formatWhen(doc.createdAt)}
               </span>
@@ -253,7 +253,7 @@ function MatchStats({ analysis }: { analysis: JobAnalysis }) {
            <Tooltip>
               <TooltipTrigger
                  render={
-                    <span className='flex cursor-default items-center gap-1 text-xs font-normal tabular-nums text-muted-foreground' />
+                    <span className='flex cursor-default items-center gap-1 text-[10px] font-normal tabular-nums text-muted-foreground' />
                  }>
                  <span
                     className={`size-2 rounded-full ${scoreColor(analysis.matchScore)}`}

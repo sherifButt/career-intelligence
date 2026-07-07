@@ -81,7 +81,9 @@ Key behaviours you can verify in the UI:
   match a job's wording.
 - **Job match screening** — every job gets a one-time recruiter-style LLM screen at ingest,
   surfaced in the assignment's own vocabulary: **fit** (0–100%, anchored rubric, median of 3
-  samples for stability), **skill gaps** (count of unmet must-haves — hovering lists the
+  samples for stability, judged by a stronger model than chat — `ANALYSIS_MODEL`, default
+  gpt-4o — with today's date injected so date-range requirements compute correctly),
+  **skill gaps** (count of unmet must-haves — hovering lists the
   actual missing skills as bullets), **experience alignment** (shown only as an under/over
   warning), and an **apply verdict** (Yes/No — is this application worth making as-is). The
   Context panel splits résumé from jobs and ranks jobs best-fit-first; re-ingesting the résumé

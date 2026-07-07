@@ -20,6 +20,8 @@ export interface CompletionResult {
 export interface CompletionOptions {
   /** Overrides the provider's default (0.2). Use 0 for scoring/judgment. */
   temperature?: number;
+  /** Overrides LLM_MODEL for this call (e.g. a stronger judge model). */
+  model?: string;
 }
 
 export interface LlmProvider {

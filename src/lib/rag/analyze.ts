@@ -17,7 +17,10 @@ const SYSTEM_PROMPT = `You are an experienced technical recruiter doing a first-
 Work through this, in order, before answering:
 1. Identify the role's PRIMARY required skill/stack (the language, platform, or discipline the job is actually about) and the required years of experience in it.
 2. List the job's must-have requirements (required qualifications; ignore nice-to-haves).
-3. For each must-have, judge from the résumé text alone: met, partial, or missing. A skill merely listed among many is "partial" if the job demands expert/primary-level use of it.
+3. For each must-have, judge from the résumé text alone: met, partial, or missing.
+   - Scan the WHOLE résumé for evidence, especially project descriptions — a skill demonstrated in a project counts as met even when the résumé phrases it differently from the job (e.g. "built a multi-step tool-using agent" meets "hands-on with agents"; "agentic systems" and "AI agents" are the same thing).
+   - A skill merely listed among many, with no project evidence, is "partial" if the job demands expert/primary-level use of it.
+   - For years-of-experience requirements, COMPUTE the duration from the résumé's date ranges against today's date (given below) before judging — "Oct 2019 – Present" is a calculable span, not an unknown.
 4. Count them, then score with these anchors:
    - 85–100: essentially all must-haves met, including the PRIMARY skill as the candidate's own primary stack and the years requirement.
    - 70–84: most must-haves met; 1–2 partial gaps, none in the PRIMARY skill.
@@ -52,18 +55,28 @@ export async function analyzeJobFit(
   // No résumé ingested yet → nothing to compare against.
   if (!resumeText) return null;
 
+  // Without today's date the model can't resolve "Oct 2019 – Present" and
+  // wrongly fails years-of-experience requirements (observed: "3+ years AI
+  // experience" flagged missing against a 6+ year AI-focused tenure).
+  const today = new Date().toISOString().slice(0, 10);
   const messages = [
     { role: "system" as const, content: SYSTEM_PROMPT },
     {
       role: "user" as const,
-      content: `RÉSUMÉ:\n${resumeText.slice(0, MAX_CHARS)}\n\nJOB DESCRIPTION:\n${jobContent.slice(0, MAX_CHARS)}`,
+      content: `Today's date: ${today}\n\nRÉSUMÉ:\n${resumeText.slice(0, MAX_CHARS)}\n\nJOB DESCRIPTION:\n${jobContent.slice(0, MAX_CHARS)}`,
     },
   ];
 
+  // The screen uses a stronger model than chat: gpt-4o-mini consistently
+  // failed evidence-reading (flagging "hands-on with agents" as missing
+  // against a CV describing built agent products) even with explicit rubric
+  // instructions. Screening runs once per job ingest, so ~3c for correct
+  // judgment beats ~0.2c for confidently wrong.
+  const model = process.env.ANALYSIS_MODEL ?? "gpt-4o";
   const provider = getLlmProvider();
   const completions = await Promise.all(
     Array.from({ length: SAMPLES }, () =>
-      provider.complete(messages, { temperature: 0 }),
+      provider.complete(messages, { temperature: 0, model }),
     ),
   );
 
