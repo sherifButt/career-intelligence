@@ -9,10 +9,11 @@ import type { DocType } from "../src/lib/db/schema";
 
 const SEED_DIR = path.join(process.cwd(), "seed");
 
-// Convention over config: files named cv-* / resume-* are the résumé,
-// everything else is a job description.
+// Convention over config: a filename containing "cv" or "resume" as a word
+// segment (cv-x, Sherif_CV, my resume.pdf) is the résumé, everything else a
+// job description.
 function inferDocType(filename: string): DocType {
-  return /^(cv|resume)/i.test(filename) ? "resume" : "job";
+  return /(^|[^a-z])(cv|resume)([^a-z]|$)/i.test(filename) ? "resume" : "job";
 }
 
 async function main() {

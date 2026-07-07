@@ -67,7 +67,7 @@ export function ContextPanel({
   }
 
   return (
-    <aside className="hidden w-72 shrink-0 flex-col border-l bg-muted/30 lg:flex">
+    <aside className="hidden w-79 shrink-0 flex-col border-l bg-muted/30 lg:flex">
       <div className="flex items-center justify-between px-4 pb-2 pt-4">
         <h2 className="text-sm font-semibold">Context</h2>
         <Badge variant="secondary" className="text-[11px]">
@@ -169,16 +169,16 @@ function DocList({
         >
           <DocIcon name={doc.name} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium" title={doc.name}>
+            <p className="truncate text-sm font-normal" title={doc.name}>
               {doc.name}
             </p>
-            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+            <div className="flex flex-wrap justify-between items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
               <span>
                 {formatSize(doc.sizeBytes)} · {formatWhen(doc.createdAt)}
               </span>
               {doc.analysis && (
                 <>
-                  <span aria-hidden>·</span>
+                  {/* <span aria-hidden>·</span> */}
                   <MatchStats analysis={doc.analysis} />
                 </>
               )}
@@ -220,42 +220,38 @@ const RISK_CLASSES = {
 
 function MatchStats({ analysis }: { analysis: JobAnalysis }) {
   return (
-    <span
-      className="inline-flex flex-wrap items-center gap-1.5"
-      title={analysis.riskNote || undefined}
-    >
-      <span className="flex items-center gap-1 text-xs font-medium tabular-nums text-foreground">
-        <span
-          className={`size-2 rounded-full ${scoreColor(analysis.matchScore)}`}
-          aria-hidden
-        />
-        {analysis.matchScore}%
-      </span>
-      <Badge
-        variant="outline"
-        className={`px-1.5 text-[10px] font-normal ${RISK_CLASSES[analysis.risk]}`}
-      >
-        {RISK_LABEL[analysis.risk]}
-      </Badge>
-      {analysis.seniority === "fit" ? (
-        <span
-          className="flex items-center text-green-600 dark:text-green-500"
-          title="Seniority: fit for the level this role is pitched at"
-        >
-          <Check className="size-3.5" strokeWidth={3} />
-          <span className="sr-only">seniority: fit</span>
+     <span
+        className='inline-flex flex-wrap items-center gap-1.5'
+        title={analysis.riskNote || undefined}>
+        <span className='flex items-center gap-1 text-xs font-normal tabular-nums text-muted-foreground'>
+           <span
+              className={`size-2 rounded-full ${scoreColor(analysis.matchScore)}`}
+              aria-hidden
+           />
+           {analysis.matchScore}%
         </span>
-      ) : (
         <Badge
-          variant="outline"
-          className="px-1.5 text-[10px] font-normal"
-          title={`Seniority: ${analysis.seniority}-qualified for this role`}
-        >
-          {analysis.seniority}
+           variant='outline'
+           className={`px-1.5 text-[10px] font-normal `}>
+           {RISK_LABEL[analysis.risk]}
         </Badge>
-      )}
-    </span>
-  );
+        {analysis.seniority === 'fit' ? (
+           <span
+              className='flex items-center '
+              title='Seniority: fit for the level this role is pitched at'>
+              <Check className='size-3.5' strokeWidth={2} />
+              <span className='sr-only'>seniority: fit</span>
+           </span>
+        ) : (
+           <Badge
+              variant='outline'
+              className='px-1.5 text-[10px] font-normal'
+              title={`Seniority: ${analysis.seniority}-qualified for this role`}>
+              {analysis.seniority}
+           </Badge>
+        )}
+     </span>
+  )
 }
 
 function DocIcon({ name }: { name: string }) {

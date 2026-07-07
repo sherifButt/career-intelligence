@@ -64,7 +64,9 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
     setName(picked.name);
     // Convention-based default, same rule as the seed script — still
     // user-overridable via the radio group.
-    setDocType(/^(cv|resume)/i.test(picked.name) ? "resume" : "job");
+    setDocType(
+      /(^|[^a-z])(cv|resume)([^a-z]|$)/i.test(picked.name) ? "resume" : "job",
+    );
   }
 
   async function submit() {
