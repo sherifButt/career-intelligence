@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { File, FileText, Trash2 } from "lucide-react";
+import type { JobAnalysis } from "@/lib/db/schema";
 
 export interface DocumentSummary {
   id: number;
@@ -25,11 +26,13 @@ export interface DocumentSummary {
   chunkCount: number;
   sizeBytes: number;
   createdAt: string;
+  analysis?: JobAnalysis | null;
 }
 
-// The retrieval corpus, visible at a glance on the right of the chat. Rows
-// carry a hover-revealed delete; adding documents lives in the chat
-// input (📎).
+// The retrieval corpus, visible at a glance on the right of the chat —
+// résumé on top, jobs ranked by their ingest-time fit screen (match score,
+// screening risk, seniority fit). Rows carry a hover-revealed delete;
+// adding documents lives in the chat input (📎).
 export function ContextPanel({
   documents,
   loading,
@@ -41,6 +44,8 @@ export function ContextPanel({
 }) {
   const [toDelete, setToDelete] = useState<DocumentSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const resumes = documents.filter((d) => d.docType === "resume");
+  const jobs = documents.filter((d) => d.docType === "job");
 
   async function confirmDelete() {
     if (!toDelete || deleting) return;
@@ -83,34 +88,18 @@ export function ContextPanel({
             for the demo corpus, or attach a file with the 📎 in the chat box.
           </p>
         ) : (
-          <ul className="space-y-1">
-            {documents.map((doc) => (
-              <li
-                key={doc.id}
-                className="group flex items-start gap-3 rounded-md px-2 py-2"
-              >
-                <DocIcon name={doc.name} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium" title={doc.name}>
-                    {doc.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {doc.docType} · {formatSize(doc.sizeBytes)} ·{" "}
-                    {formatWhen(doc.createdAt)}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="invisible size-6 shrink-0 text-muted-foreground hover:text-destructive group-hover:visible"
-                  onClick={() => setToDelete(doc)}
-                  aria-label={`Delete ${doc.name}`}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-5">
+            <section>
+              <SectionHeading>Résumé</SectionHeading>
+              <DocList docs={resumes} onDelete={setToDelete} />
+            </section>
+            <section>
+              <SectionHeading hint={jobs.length > 1 ? "best match first" : undefined}>
+                Jobs
+              </SectionHeading>
+              <DocList docs={jobs} onDelete={setToDelete} />
+            </section>
+          </div>
         )}
       </ScrollArea>
 
@@ -141,6 +130,102 @@ export function ContextPanel({
         </AlertDialogContent>
       </AlertDialog>
     </aside>
+  );
+}
+
+function SectionHeading({
+  children,
+  hint,
+}: {
+  children: React.ReactNode;
+  hint?: string;
+}) {
+  return (
+    <div className="mb-1 flex items-baseline justify-between px-2">
+      <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {children}
+      </h3>
+      {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
+    </div>
+  );
+}
+
+function DocList({
+  docs,
+  onDelete,
+}: {
+  docs: DocumentSummary[];
+  onDelete: (doc: DocumentSummary) => void;
+}) {
+  if (docs.length === 0) {
+    return <p className="px-2 text-xs text-muted-foreground">None yet.</p>;
+  }
+  return (
+    <ul className="space-y-1">
+      {docs.map((doc) => (
+        <li
+          key={doc.id}
+          className="group flex items-start gap-3 rounded-md px-2 py-2"
+        >
+          <DocIcon name={doc.name} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium" title={doc.name}>
+              {doc.name}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {formatSize(doc.sizeBytes)} · {formatWhen(doc.createdAt)}
+            </p>
+            {doc.analysis && <MatchRow analysis={doc.analysis} />}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="invisible size-6 shrink-0 text-muted-foreground hover:text-destructive group-hover:visible"
+            onClick={() => onDelete(doc)}
+            aria-label={`Delete ${doc.name}`}
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// green ≥70 / amber 40–69 / red <40 — coarse on purpose; the number carries
+// the precision.
+function scoreColor(score: number): string {
+  if (score >= 70) return "bg-green-500";
+  if (score >= 40) return "bg-amber-500";
+  return "bg-red-500";
+}
+
+const RISK_LABEL = { low: "low risk", medium: "med risk", high: "high risk" };
+const SENIORITY_LABEL = { under: "under", fit: "fit", over: "over" };
+
+function MatchRow({ analysis }: { analysis: JobAnalysis }) {
+  return (
+    <div
+      className="mt-1 flex flex-wrap items-center gap-1.5"
+      title={analysis.riskNote || undefined}
+    >
+      <span className="flex items-center gap-1 text-xs font-medium tabular-nums">
+        <span
+          className={`size-2 rounded-full ${scoreColor(analysis.matchScore)}`}
+          aria-hidden
+        />
+        {analysis.matchScore}%
+      </span>
+      <Badge
+        variant={analysis.risk === "high" ? "destructive" : "outline"}
+        className="px-1.5 text-[10px] font-normal"
+      >
+        {RISK_LABEL[analysis.risk]}
+      </Badge>
+      <Badge variant="outline" className="px-1.5 text-[10px] font-normal">
+        {SENIORITY_LABEL[analysis.seniority]}
+      </Badge>
+    </div>
   );
 }
 

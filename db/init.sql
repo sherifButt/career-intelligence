@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS documents (
   id          serial PRIMARY KEY,
   name        text NOT NULL UNIQUE,
   doc_type    text NOT NULL CHECK (doc_type IN ('resume', 'job')),
+  -- For jobs: LLM fit analysis computed once at ingest
+  -- ({matchScore, risk, riskNote, seniority}); null for the resume or if
+  -- analysis failed.
+  analysis    jsonb,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 

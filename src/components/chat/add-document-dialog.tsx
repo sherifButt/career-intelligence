@@ -70,6 +70,11 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
       if (!res.ok) throw new Error(data.error ?? `Ingest failed (${res.status})`);
       toast.success(
         `${name.trim()} ingested — ${data.chunkCount} chunk${data.chunkCount === 1 ? "" : "s"} embedded`,
+        {
+          description: data.analysis
+            ? `${data.analysis.matchScore}% match · ${data.analysis.risk} risk · seniority ${data.analysis.seniority}`
+            : undefined,
+        },
       );
       setOpen(false);
       reset();
@@ -194,7 +199,7 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
           </Button>
           <Button onClick={submit} disabled={!file || !name.trim() || submitting}>
             {submitting && <Loader2 className="size-4 animate-spin" />}
-            {submitting ? "Extracting & embedding…" : "Ingest"}
+            {submitting ? "Processing…" : "Ingest"}
           </Button>
         </DialogFooter>
       </DialogContent>

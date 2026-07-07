@@ -57,7 +57,18 @@ export default function ChatPage() {
   function loadDocuments() {
     fetch("/api/documents")
       .then((res) => res.json())
-      .then((data) => setDocuments(data.documents ?? []))
+      .then((data) => {
+        const docs: DocumentSummary[] = data.documents ?? [];
+        // Résumé first, then jobs by match score (unanalysed last) — sorted
+        // once here so the Context panel and the scope chips agree.
+        docs.sort((a, b) => {
+          if (a.docType !== b.docType) return a.docType === "resume" ? -1 : 1;
+          return (
+            (b.analysis?.matchScore ?? -1) - (a.analysis?.matchScore ?? -1)
+          );
+        });
+        setDocuments(docs);
+      })
       .catch(() => toast.error("Could not load documents — is the DB up?"))
       .finally(() => setDocsLoading(false));
   }

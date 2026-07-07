@@ -78,6 +78,10 @@ Key behaviours you can verify in the UI:
 - **Job scope selector** — an "Analyse against" control pins a question to a single posting
   (retrieval filters to that document), instead of relying on the question text happening to
   match a job's wording.
+- **Job match screening** — every job gets a one-time recruiter-style LLM screen at ingest
+  (match score 0–100, screening risk with a one-line reason on hover, seniority fit). The
+  Context panel splits résumé from jobs and ranks jobs best-match-first; re-ingesting the
+  résumé re-screens every job. Uploading a JD toasts its score immediately.
 - **Contextual follow-ups** — after each answer, the quick-question row regenerates: a small
   LLM call (fired after the answer renders, so it adds no latency) predicts the four most
   useful next questions from the last exchange and the loaded documents. Falls back to the

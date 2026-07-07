@@ -1,11 +1,25 @@
 import {
   integer,
+  jsonb,
   pgTable,
   serial,
   text,
   timestamp,
   vector,
 } from "drizzle-orm/pg-core";
+
+// Recruiter-style screen of the résumé against one job, computed once when
+// the job is ingested (and refreshed when the résumé changes).
+export interface JobAnalysis {
+  /** 0–100 overall skills/experience match. */
+  matchScore: number;
+  /** Likelihood an HR screen rejects the application. */
+  risk: "low" | "medium" | "high";
+  /** One line naming the biggest screening-out risk. */
+  riskNote: string;
+  /** Candidate level vs the level the role is pitched at. */
+  seniority: "under" | "fit" | "over";
+}
 
 // Mirrors db/init.sql, which is the actual source of truth (it runs on first
 // postgres boot). Duplicating ~20 lines of DDL was chosen over wiring a
@@ -15,6 +29,7 @@ export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   docType: text("doc_type", { enum: ["resume", "job"] }).notNull(),
+  analysis: jsonb("analysis").$type<JobAnalysis | null>(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

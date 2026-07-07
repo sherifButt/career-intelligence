@@ -18,6 +18,7 @@ export async function GET() {
         // overlap) — close enough for a "4.2 KB" display label.
         sizeBytes: sql<number>`coalesce(sum(length(${chunks.content})), 0)`,
         createdAt: documents.createdAt,
+        analysis: documents.analysis,
       })
       .from(documents)
       .leftJoin(chunks, eq(chunks.documentId, documents.id))
