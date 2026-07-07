@@ -137,7 +137,7 @@ tests/                       # retrieval integration test (self-skipping)
 ## RAG / LLM approach & decisions
 
 > ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
-> Read entries **d1–d9** in docs/DECISIONS.draft.md, decide whether you actually agree
+> Read entries **d1–d12** in docs/DECISIONS.draft.md, decide whether you actually agree
 > (change it if you don't), then write this section from that.
 > Prompts to cover:
 >   - Chunking: why paragraph-first at ~600 tokens / 15% overlap; why a char heuristic over a tokenizer.
@@ -149,13 +149,16 @@ tests/                       # retrieval integration test (self-skipping)
 >     strongest decision here and your product-innovation story; own both failure modes it fixes.
 >   - Guardrails: how the 0.25 threshold was picked empirically and what its limits are.
 >   - How you'd measure quality (golden set) and what the structured logs already give you.
+>   - The second LLM call for follow-up suggestions (d10) — why decorative AI must fail invisibly.
+>   - Inline citation chips (d11) — prompt-enforced markers, and the two-layer provenance story.
 
 ## Key technical decisions
 
 > ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
-> Read entry **(e)** in docs/DECISIONS.draft.md — it lists five candidate forks
-> (framework vs hand-rolled, pgvector, balanced retrieval, guardrail-before-LLM,
-> init.sql vs migrations). Pick YOUR top 3–4 and write the tradeoff you weighed at each.
+> Read entry **(e)** in docs/DECISIONS.draft.md — it lists six candidate forks
+> (framework vs hand-rolled, pgvector, job-aware retrieval, guardrail-before-LLM,
+> init.sql vs migrations, degradable secondary LLM calls). Pick YOUR top 3–4 and write
+> the tradeoff you weighed at each.
 
 ## Engineering standards — followed & deliberately skipped
 
@@ -171,7 +174,8 @@ tests/                       # retrieval integration test (self-skipping)
 > ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
 > Read entry **(g)** in docs/DECISIONS.draft.md — it contains the factual record
 > (spec-first CLAUDE.md, phase commits, verification gates, what was delegated vs kept human,
-> and the "AI overwrote my spec file" incident). Prompts to cover:
+> and four "AI/tooling was wrong" incidents — the docker exit-code lie is the strongest).
+> Prompts to cover:
 >   - Your workflow: spec file first, phase-boundary commits, typecheck/test/browser-verify gates.
 >   - What you delegate vs what you never delegate (the reasoning in this README, for one).
 >   - How you keep AI output to your standards and make the process repeatable.
@@ -181,10 +185,11 @@ tests/                       # retrieval integration test (self-skipping)
 ## What I'd do next
 
 > ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
-> Read entry **(h)** in docs/DECISIONS.draft.md — a 10-item draft backlog (streaming, upload
-> parsing, conversation memory, golden-set evals, query-aware routing, section metadata,
-> second provider, embedding cache, real migrations). Reorder to YOUR priority, cut what you
-> wouldn't do, and say what you'd do differently from the start.
+> Read entry **(h)** in docs/DECISIONS.draft.md — the draft backlog (streaming, conversation
+> memory, golden-set evals, section metadata, second provider, embedding cache, real
+> migrations, multi-chat, OCR, suggestion-quality loop; upload and scope-routing are already
+> done and struck through). Reorder to YOUR priority, cut what you wouldn't do, and say what
+> you'd do differently from the start.
 
 ## Screenshots
 
