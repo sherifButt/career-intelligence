@@ -19,8 +19,10 @@ Work through this, in order, before answering:
 2. List the job's must-have requirements (required qualifications; ignore nice-to-haves).
 3. For each must-have, judge from the résumé text alone: met, partial, or missing.
    - Scan the WHOLE résumé for evidence, especially project descriptions — a skill demonstrated in a project counts as met even when the résumé phrases it differently from the job (e.g. "built a multi-step tool-using agent" meets "hands-on with agents"; "agentic systems" and "AI agents" are the same thing).
+   - Credit ONE-HOP inferences: before flagging a must-have as missing, ask whether any project necessarily implies it. Authoring a plugin for a tool implies hands-on experience with that tool; integrating several third-party SDKs implies REST/SDK integration skill; building database-backed systems implies basic SQL. Do NOT credit two-hop leaps (using Docker does not imply Kubernetes).
    - A skill merely listed among many, with no project evidence, is "partial" if the job demands expert/primary-level use of it.
    - For years-of-experience requirements, COMPUTE the duration from the résumé's date ranges against today's date (given below) before judging — "Oct 2019 – Present" is a calculable span, not an unknown.
+   - Requirements phrased as alternatives ("at least one of AWS, Azure, Cloudflare, or Vercel"; "Python or Go") are MET by evidencing any single option — do not fail them for lacking the others.
 4. Count them, then score with these anchors:
    - 85–100: essentially all must-haves met, including the PRIMARY skill as the candidate's own primary stack and the years requirement.
    - 70–84: most must-haves met; 1–2 partial gaps, none in the PRIMARY skill.
@@ -29,8 +31,11 @@ Work through this, in order, before answering:
    - below 30: wrong role.
    Hard rule: if the candidate's primary stack differs from the role's PRIMARY skill, the score must be below 70 — no matter how strong the rest is.
 
-Return ONLY a JSON object, no prose, exactly this shape:
+Output format — two parts, in this order:
+PART 1 (analysis, plain text): for EACH must-have, one line: the requirement, the strongest résumé evidence quoted (or "no evidence"), and your judgement met/partial/missing. This part is mandatory — judging without writing the evidence first produces wrong screens.
+PART 2 (final line): the JSON object, alone on its own line, exactly this shape:
 {"matchScore": <integer 0-100>, "mustHaves": "<met>/<total>", "missing": ["<2-5 word label per unmet must-have, max 6 items>"], "risk": "low"|"medium"|"high", "riskNote": "<one sentence, max 90 chars, naming the single biggest screening-out risk>", "seniority": "under"|"fit"|"over", "apply": "yes"|"no"}
+The JSON MUST agree with your PART 1 judgements — count met items from PART 1.
 
 Definitions:
 - missing: the unmet/partial must-haves from step 3, as short skill labels ("AWS certification", "Kubernetes in production"). Empty array if all met. It MUST contain exactly (total − met) items — one per unmet must-have, no more, no fewer.
@@ -39,8 +44,11 @@ Definitions:
 - apply: your overall verdict — should the candidate spend time applying as-is? "yes" when there's a realistic chance (roughly: score 60+ and no single disqualifying gap); otherwise "no".
 Judge only from the two texts. Be honest, not kind. Use the full range — identical scores for different jobs almost always means you failed to discriminate.`;
 
-// Enough context for a screen without blowing the budget on huge documents.
-const MAX_CHARS = 8000;
+// Generous cap: chunk-overlap inflates the reconstructed résumé (~20%), and
+// an 8k cap silently amputated the CV's tail — including its open-source
+// section — so the screen judged evidence it never saw. 20k chars covers any
+// realistic CV/JD with overlap; truly huge documents still get bounded.
+const MAX_CHARS = 20_000;
 
 // Self-consistency: even at temperature 0 the must-have extraction wobbles
 // between runs (observed: the same job flipping 85 ↔ 70 because the model
@@ -127,7 +135,14 @@ async function getResumeText(): Promise<string | null> {
 }
 
 function parseAnalysis(text: string): JobAnalysis | null {
-  const match = text.match(/\{[\s\S]*\}/);
+  // The JSON is the final block after the written analysis; take the last
+  // '{...}' span (the object has no nested braces).
+  const start = text.lastIndexOf("{");
+  const end = text.lastIndexOf("}");
+  const match =
+    start >= 0 && end > start
+      ? [text.slice(start, end + 1)]
+      : text.match(/\{[\s\S]*\}/);
   if (!match) return null;
   try {
     const raw = JSON.parse(match[0]) as Record<string, unknown>;
