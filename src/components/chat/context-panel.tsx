@@ -249,7 +249,10 @@ function MatchStats({ analysis }: { analysis: JobAnalysis }) {
   const gaps = gapCount(analysis);
   return (
      <TooltipProvider>
-        <span className='inline-flex flex-wrap items-center gap-1.5'>
+        {/* Fixed-width columns (fit | gaps | seniority | verdict) so values
+            line up vertically across rows — absent values keep their cell
+            instead of letting the row reflow. */}
+        <span className='inline-grid grid-cols-[4rem_2.9rem_2.6rem_2.4rem] items-center justify-items-end gap-x-1'>
            <Tooltip>
               <TooltipTrigger
                  render={
@@ -266,7 +269,9 @@ function MatchStats({ analysis }: { analysis: JobAnalysis }) {
                  (median of 3 screens)
               </TooltipContent>
            </Tooltip>
-           {gaps !== null && (
+           {gaps === null ? (
+              <span aria-hidden />
+           ) : (
               <Tooltip>
                  <TooltipTrigger
                     render={
@@ -293,7 +298,9 @@ function MatchStats({ analysis }: { analysis: JobAnalysis }) {
            )}
            {/* Seniority only speaks when it's a warning — "fit" is implied
                by the verdict, so the old ✓ was redundant. */}
-           {analysis.seniority !== 'fit' && (
+           {analysis.seniority === 'fit' ? (
+              <span aria-hidden />
+           ) : (
               <Tooltip>
                  <TooltipTrigger
                     render={
@@ -307,7 +314,9 @@ function MatchStats({ analysis }: { analysis: JobAnalysis }) {
                  <TooltipContent>{SENIORITY_TOOLTIP[analysis.seniority]}</TooltipContent>
               </Tooltip>
            )}
-           {analysis.apply && (
+           {!analysis.apply ? (
+              <span aria-hidden />
+           ) : (
               <Tooltip>
                  <TooltipTrigger
                     render={
