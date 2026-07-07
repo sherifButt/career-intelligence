@@ -1,0 +1,70 @@
+STAFF DEVSECOPS ENGINEER
+Location: Remote | Type: Contract
+
+About Newpage Solutions
+Newpage Solutions is a global digital health innovation company helping people live longer, healthier lives. We partner with life sciences organizations—including pharmaceutical, biotech, and healthcare leaders—to build transformative AI and data-driven technologies addressing real-world health challenges.
+From strategy and research to UX design and agile development, we deliver and validate impactful solutions using lean, human-centered practices.
+
+We are proud to be Great Place to Work® certified for three consecutive years, hold a top Glassdoor rating, and were named among the "Top 50 Most Promising Healthcare Solution Providers" by CIO Review.
+
+As a remote-first company, we foster creativity, continuous learning, and inclusivity, creating an environment where bold ideas thrive and make a measurable difference in people’s lives.
+
+Newpage looks for candidates who are invested in long-term impact. Applications with a pattern of frequent job changes may not align with the values we prioritize.
+
+Your Mission
+Newpage is hiring a Staff DevSecOps Engineer to lead the security engineering posture of a strategic engagement with a global top-tier pharmaceutical company. As the technical anchor for the account, you will define how secure software is built, shipped, and operated across the client's cloud estate — spanning AWS, Azure, and GCP workloads — from research and clinical data platforms through to commercial and supply-chain systems. The client's strategic direction leans on AWS, and depth there is a meaningful advantage.
+You will partner closely with the client's CISO organization, cloud platform team, application teams, and quality and compliance functions to embed security as code into every pipeline. This is a hands-on principal-level role for someone who thrives at the intersection of cloud-native engineering, regulatory rigor, and developer experience.
+What You’ll Do
+Set DevSecOps Strategy & Standards
+Define and own the DevSecOps reference architecture across the client's cloud estate — landing zones, account/subscription vending, identity, secrets, network segmentation, and workload isolation patterns — applied consistently whether on AWS (preferred), Azure, or GCP.
+Set the multi-year roadmap for shift-left security, supply-chain integrity, runtime protection, and continuous compliance evidence collection across regulated and non-regulated workloads.
+Act as the senior technical voice in client steering committees, security architecture reviews, and audit readiness sessions; translate regulatory intent into engineering requirements that teams can implement.
+Mentor and coach Newpage and client engineers; raise the bar on secure coding, threat modeling, and incident response across the account.
+Engineer Security Into the Cloud Estate
+Design and operate hardened, multi-account or multi-subscription landing zones — AWS Control Tower / Organizations / SCPs / Identity Center (preferred), Azure Landing Zones / Management Groups / Policy, or GCP Organization Policy / Folders — with guardrails enforced as code.
+Build paved-road CI/CD pipelines (GitHub Actions, GitLab CI, AWS CodePipeline, Azure DevOps, or Jenkins) with integrated SAST, DAST, SCA, secrets scanning, IaC scanning, container scanning, and SBOM generation.
+Implement policy-as-code using OPA/Rego, Checkov, and cloud-native equivalents (AWS Config Rules / CloudFormation Guard, Azure Policy, GCP Organization Policy); enforce at pull-request time and in production.
+Operationalize cloud-native security services end-to-end — AWS GuardDuty / Security Hub / Macie / Inspector / IAM Access Analyzer / KMS / Secrets Manager / WAF (primary), with working knowledge of Microsoft Defender for Cloud / Sentinel and GCP Security Command Center.
+Lead Kubernetes and container security across managed offerings (EKS preferred; AKS, GKE accepted), including admission control, image signing (Sigstore/Cosign), runtime threat detection (Falco or equivalent), and Pod Security Standards enforcement.
+Drive supply-chain security to SLSA-aligned maturity: signed builds, attested artifacts, dependency provenance, and verified deploys.
+Own Regulated & Pharma-Specific Controls
+Engineer controls that satisfy GxP, 21 CFR Part 11, Annex 11, HIPAA, GDPR, and the client's global information security standards — without slowing delivery teams down.
+Design continuous compliance evidence pipelines that auto-generate audit artifacts for FDA, EMA, and internal QA inspections, replacing manual screenshotting and ticket-based attestations.
+Partner with Computer System Validation (CSV) and Computer Software Assurance (CSA) teams to align DevSecOps tooling with validated-state expectations for clinical, manufacturing, and pharmacovigilance systems.
+Champion data protection for sensitive scientific IP, clinical trial data, and patient-adjacent datasets — tokenization, encryption strategy, and least-privilege access across cloud data services (e.g., S3 / Redshift / RDS / Lake Formation on AWS, or equivalents on Azure and GCP).
+Drive Detection, Response & Resilience
+Engineer detection-as-code and response automation in collaboration with the client SOC; tune findings, suppress noise, and ensure every signal is actionable.
+Run blameless postmortems for security incidents and near-misses; convert lessons into durable engineering improvements.
+Establish security SLOs and meaningful metrics — mean time to remediate, control coverage, drift, and developer-impacting friction.
+Influence Across Client and Practice
+Build trust with the client's senior security, platform, and quality leadership; become the person they call before launching a new initiative.
+Contribute to Newpage's internal DevSecOps practice: reusable accelerators, case studies, hiring loops, and the next generation of senior engineers across the company.
+What You Bring
+8+ years of professional experience in security engineering, platform engineering, or SRE, with at least 4 years leading DevSecOps initiatives at scale.
+Deep, current expertise with at least one major public cloud at production scale — AWS is strongly preferred (you have personally designed and operated multi-account environments with 50+ accounts); Azure or GCP at equivalent depth will be considered.
+Working familiarity with at least one additional cloud beyond your primary — enough to design controls that translate cleanly across providers.
+Strong hands-on coding skills in at least one of Python, Go, or TypeScript, and fluency in infrastructure-as-code with Terraform (cloud-agnostic mastery preferred; CDK, Bicep, or Pulumi also welcome).
+Demonstrable experience embedding security into CI/CD pipelines and developer workflows for engineering organizations of 200+ developers.
+Working knowledge of Kubernetes security on at least one managed offering (EKS preferred; AKS or GKE accepted) — including network policy, admission control, and supply-chain controls.
+Track record of operating in a regulated industry — pharma, healthcare, financial services, or critical infrastructure — and translating compliance frameworks into engineering controls.
+Excellent written and verbal communication skills; comfortable presenting to a client CISO one day and pairing with a junior engineer the next.
+Nice to have Direct experience with pharma or life-sciences workloads: GxP, 21 CFR Part 11, Annex 11, CSV/CSA, pharmacovigilance systems, or clinical data platforms.
+Nice to have Exposure to threat modeling frameworks (STRIDE, PASTA), MITRE ATT&CK, and threat-informed defense.
+Nice to have Experience with policy-as-code (OPA/Rego, Cedar) and continuous compliance platforms (Wiz, Prisma Cloud, Orca, Drata, Vanta) at enterprise scale.
+Nice to have Hands-on with secret management (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, or GCP Secret Manager) and zero-trust networking patterns.
+Nice to have Relevant certifications such as AWS Security Specialty (preferred), Azure Security Engineer Associate, Google Professional Cloud Security Engineer, CISSP, CCSP, OSCP, or GIAC GCSA — credentials are a signal, not a substitute for evidence.
+Nice to have Familiarity with AI/ML pipeline security and the emerging risks around generative AI in regulated environments.
+What We Offer
+At Newpage, we’re building a company that works smart and grows with agility—where driven individuals come together to do work that matters. We offer:
+Flexible, remote-first work – Choose where you work best while staying connected to a global, collaborative team.
+A people-first culture – Supportive peers, open communication, and a strong sense of belonging.
+Smart, purposeful collaboration – Work with talented colleagues to create technologies that solve meaningful business challenges.
+Balance that lasts – We respect your time and support a healthy integration of work and life.
+Room to grow – Opportunities for learning, leadership, and career development, shaped around you.
+Meaningful rewards – Competitive compensation that recognizes both contribution and potential.
+Ready to Apply?
+Let’s build the future of health together. Apply below or reach out to shubhi.tiwari@newpage.io with any questions.
+
+More about Newpage
+Newpage is a digital health solutions company. We devote ourselves to advancing the quality of life by enhancing health and optimizing the longevity of people. We do this by, passionately building futuristic technologies for global organizations across the healthcare ecosystem. We partake at every stage from problem definition, strategy & service design, user research, UX design, and agile software development – utilizing lean practices to deliver and validate highly innovative digital health solutions that drive user value and business transformation.
+Newpage is recognized by ‘CIO’s Review’ as “Top 50 Promising Healthcare Solution Providers” and Great Place to Work Certified (GPTW) 2023 & 2024.

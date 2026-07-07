@@ -30,7 +30,7 @@ Return ONLY a JSON object, no prose, exactly this shape:
 {"matchScore": <integer 0-100>, "mustHaves": "<met>/<total>", "missing": ["<2-5 word label per unmet must-have, max 6 items>"], "risk": "low"|"medium"|"high", "riskNote": "<one sentence, max 90 chars, naming the single biggest screening-out risk>", "seniority": "under"|"fit"|"over", "apply": "yes"|"no"}
 
 Definitions:
-- missing: the unmet/partial must-haves from step 3, as short skill labels ("AWS certification", "Kubernetes in production"). Empty array if all met.
+- missing: the unmet/partial must-haves from step 3, as short skill labels ("AWS certification", "Kubernetes in production"). Empty array if all met. It MUST contain exactly (total − met) items — one per unmet must-have, no more, no fewer.
 - risk: likelihood an HR screen rejects the application (missing must-haves, domain mismatch, certifications). Tie it to the score: below 50 is never "low" risk.
 - seniority: candidate's level relative to the level the role is pitched at ("over" = overqualified).
 - apply: your overall verdict — should the candidate spend time applying as-is? "yes" when there's a realistic chance (roughly: score 60+ and no single disqualifying gap); otherwise "no".
@@ -134,14 +134,26 @@ function parseAnalysis(text: string): JobAnalysis | null {
           .map((m) => m.trim().slice(0, 60))
           .slice(0, 8)
       : [];
+    // The model sometimes returns a met/total fraction that disagrees with
+    // its own missing list. The list is the concrete, checkable artifact —
+    // reconcile the fraction to it so the badge count always equals the
+    // bullets shown in the tooltip.
+    let mustHaves =
+      typeof raw.mustHaves === "string" && /^\d+\/\d+$/.test(raw.mustHaves)
+        ? raw.mustHaves
+        : undefined;
+    if (mustHaves && missing.length > 0) {
+      const total = Number(mustHaves.split("/")[1]);
+      if (total >= missing.length) {
+        mustHaves = `${total - missing.length}/${total}`;
+      }
+    }
     return {
       matchScore: Math.max(0, Math.min(100, Math.round(matchScore))),
       risk,
       riskNote: typeof raw.riskNote === "string" ? raw.riskNote.slice(0, 140) : "",
       seniority,
-      ...(typeof raw.mustHaves === "string" && /^\d+\/\d+$/.test(raw.mustHaves)
-        ? { mustHaves: raw.mustHaves }
-        : {}),
+      ...(mustHaves ? { mustHaves } : {}),
       ...(missing.length > 0 ? { missing } : {}),
       ...(raw.apply === "yes" || raw.apply === "no" ? { apply: raw.apply } : {}),
     };
