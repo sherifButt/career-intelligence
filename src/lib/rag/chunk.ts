@@ -56,7 +56,10 @@ function splitBySentence(paragraph: string, maxChars: number): string[] {
     // A single sentence longer than the budget gets hard-sliced — rare
     // enough in this corpus that smarter handling isn't worth the code.
     if (sentence.length > maxChars) {
-      if (current) parts.push(current), (current = "");
+      if (current) {
+        parts.push(current);
+        current = "";
+      }
       for (let i = 0; i < sentence.length; i += maxChars) {
         parts.push(sentence.slice(i, i + maxChars));
       }
