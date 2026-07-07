@@ -18,18 +18,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FilePlus2, Loader2, Upload } from "lucide-react";
 import type { DocType } from "@/lib/db/schema";
 
-// Upload = read the file's text in the browser and hand it to the existing
-// /api/ingest endpoint (chunk → embed → store, idempotent by name). Only
-// .md/.txt: text extraction for pdf/docx is deliberately out of scope.
-const ACCEPTED = /\.(md|txt)$/i;
-// Generous for text documents; stops someone feeding a novel to the
-// embedding API by accident.
-const MAX_CHARS = 200_000;
+// Upload = post the raw file to /api/ingest as multipart. Text extraction
+// (.md/.txt passthrough, .pdf via unpdf, .docx via mammoth) happens server-
+// side, then the same chunk → embed → store pipeline runs (idempotent by
+// name).
+const ACCEPTED = /\.(md|txt|pdf|docx)$/i;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
   const [open, setOpen] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [content, setContent] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");
   const [docType, setDocType] = useState<DocType>("job");
   const [submitting, setSubmitting] = useState(false);
@@ -37,44 +35,37 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function reset() {
-    setFileName(null);
-    setContent(null);
+    setFile(null);
     setName("");
     setDocType("job");
     setDragging(false);
   }
 
-  async function handleFile(file: File) {
-    if (!ACCEPTED.test(file.name)) {
-      toast.error("Only .md and .txt files are supported (PDF is future work)");
+  function handleFile(picked: File) {
+    if (!ACCEPTED.test(picked.name)) {
+      toast.error("Only .md, .txt, .pdf and .docx files are supported");
       return;
     }
-    const text = await file.text();
-    if (!text.trim()) {
-      toast.error(`${file.name} appears to be empty`);
+    if (picked.size > MAX_FILE_BYTES) {
+      toast.error(`${picked.name} is too large (max 10 MB)`);
       return;
     }
-    if (text.length > MAX_CHARS) {
-      toast.error(`${file.name} is too large (max ${MAX_CHARS / 1000}k characters)`);
-      return;
-    }
-    setFileName(file.name);
-    setContent(text);
-    setName(file.name);
+    setFile(picked);
+    setName(picked.name);
     // Convention-based default, same rule as the seed script — still
     // user-overridable via the radio group.
-    setDocType(/^(cv|resume)/i.test(file.name) ? "resume" : "job");
+    setDocType(/^(cv|resume)/i.test(picked.name) ? "resume" : "job");
   }
 
   async function submit() {
-    if (!content || !name.trim() || submitting) return;
+    if (!file || !name.trim() || submitting) return;
     setSubmitting(true);
     try {
-      const res = await fetch("/api/ingest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), docType, content }),
-      });
+      const form = new FormData();
+      form.set("file", file);
+      form.set("name", name.trim());
+      form.set("docType", docType);
+      const res = await fetch("/api/ingest", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `Ingest failed (${res.status})`);
       toast.success(
@@ -106,8 +97,8 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
         <DialogHeader>
           <DialogTitle>Add a document</DialogTitle>
           <DialogDescription>
-            Upload a résumé or job description (.md or .txt). It is chunked,
-            embedded, and immediately available to ask about.
+            Upload a résumé or job description (.md, .txt, .pdf or .docx). It
+            is chunked, embedded, and immediately available to ask about.
           </DialogDescription>
         </DialogHeader>
 
@@ -122,19 +113,21 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
           onDrop={(e) => {
             e.preventDefault();
             setDragging(false);
-            const file = e.dataTransfer.files?.[0];
-            if (file) handleFile(file);
+            const dropped = e.dataTransfer.files?.[0];
+            if (dropped) handleFile(dropped);
           }}
           className={`flex w-full flex-col items-center gap-1.5 rounded-md border border-dashed px-4 py-6 text-sm transition-colors ${
             dragging ? "border-primary bg-primary/5" : "hover:bg-muted/50"
           }`}
         >
           <Upload className="size-5 text-muted-foreground" />
-          {fileName ? (
-            <span className="font-medium">{fileName}</span>
+          {file ? (
+            <span className="font-medium">{file.name}</span>
           ) : (
             <>
-              <span className="font-medium">Choose a .md/.txt file</span>
+              <span className="font-medium">
+                Choose a .md, .txt, .pdf or .docx file
+              </span>
               <span className="text-xs text-muted-foreground">
                 or drag it here
               </span>
@@ -144,16 +137,16 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".md,.txt"
+          accept=".md,.txt,.pdf,.docx"
           className="hidden"
           onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFile(file);
+            const picked = e.target.files?.[0];
+            if (picked) handleFile(picked);
             e.target.value = "";
           }}
         />
 
-        {content && (
+        {file && (
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="doc-name">Name</Label>
@@ -161,7 +154,7 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
                 id="doc-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="job-4-acme-ai.md"
+                placeholder="job-4-acme-ai.pdf"
               />
               <p className="text-xs text-muted-foreground">
                 Re-using an existing name replaces that document.
@@ -195,9 +188,9 @@ export function AddDocumentDialog({ onAdded }: { onAdded: () => void }) {
           <Button variant="ghost" onClick={() => setOpen(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!content || !name.trim() || submitting}>
+          <Button onClick={submit} disabled={!file || !name.trim() || submitting}>
             {submitting && <Loader2 className="size-4 animate-spin" />}
-            {submitting ? "Embedding…" : "Ingest"}
+            {submitting ? "Extracting & embedding…" : "Ingest"}
           </Button>
         </DialogFooter>
       </DialogContent>

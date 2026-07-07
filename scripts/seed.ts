@@ -3,6 +3,7 @@
 import "dotenv/config";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { EXTRACTABLE, extractTextFromUpload } from "../src/lib/rag/extract";
 import { ingestDocument } from "../src/lib/rag/ingest";
 import type { DocType } from "../src/lib/db/schema";
 
@@ -15,14 +16,15 @@ function inferDocType(filename: string): DocType {
 }
 
 async function main() {
-  const files = (await readdir(SEED_DIR)).filter((f) => /\.(md|txt)$/i.test(f));
+  const files = (await readdir(SEED_DIR)).filter((f) => EXTRACTABLE.test(f));
   if (files.length === 0) {
-    console.error(`No .md/.txt files found in ${SEED_DIR}`);
+    console.error(`No .md/.txt/.pdf/.docx files found in ${SEED_DIR}`);
     process.exit(1);
   }
 
   for (const file of files.sort()) {
-    const content = await readFile(path.join(SEED_DIR, file), "utf8");
+    const raw = await readFile(path.join(SEED_DIR, file));
+    const content = await extractTextFromUpload(file, raw);
     const docType = inferDocType(file);
     const { chunkCount } = await ingestDocument({ name: file, docType, content });
     console.log(`✓ ${file} (${docType}) → ${chunkCount} chunks`);

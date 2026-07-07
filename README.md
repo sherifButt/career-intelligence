@@ -41,8 +41,8 @@ pnpm test    # unit tests always run; retrieval integration tests
 
 ```mermaid
 flowchart TD
-    A["Seed corpus (CV + JDs, .md/.txt)"] --> B[Ingestion pipeline]
-    B --> B1["parse → chunk (~600 tokens, 15% overlap)"]
+    A["Seed corpus + uploads\n(.md/.txt/.pdf/.docx)"] --> B[Ingestion pipeline]
+    B --> B1["extract text (unpdf / mammoth)\n→ chunk (~600 tokens, 15% overlap)"]
     B1 --> B2["embed (text-embedding-3-small, batched)"]
     B2 --> B3[("PostgreSQL + pgvector\nchunks + embeddings + metadata")]
 
@@ -65,9 +65,10 @@ retrieval scores, guardrail flag, latency, token usage, and estimated cost.
 Key behaviours you can verify in the UI:
 
 - **Upload** — "Add document" in the sidebar ingests a new résumé or job description
-  (.md/.txt, drag-and-drop or file picker): chunked, embedded, and queryable immediately,
-  with a scope chip appearing for each new job. Re-using a name replaces that document.
-  PDF/docx parsing is deliberately future work.
+  (.md, .txt, .pdf, .docx — drag-and-drop or file picker). Text extraction runs server-side
+  (unpdf for PDF, mammoth for docx); the document is chunked, embedded, and queryable
+  immediately, with a scope chip appearing for each new job. Re-using a name replaces that
+  document.
 - **Multi-job awareness** — the job-side retrieval budget is allocated *per job* (top-2 chunks
   from each posting), so comparative questions cover every job instead of letting the most
   similar posting monopolise the context; answers spanning several jobs are organised per job.
