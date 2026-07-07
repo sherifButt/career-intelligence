@@ -15,21 +15,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Trash2 } from "lucide-react";
+import { File, FileText, Trash2 } from "lucide-react";
 
 export interface DocumentSummary {
   id: number;
   name: string;
   docType: "resume" | "job";
   chunkCount: number;
+  sizeBytes: number;
+  createdAt: string;
 }
 
-// Shows the corpus at a glance: the grader can see exactly which documents
-// answers are grounded in, without opening the database. Rows carry a
-// hover-revealed delete; adding documents lives in the chat input (📎).
-export function DocumentSidebar({
+// The retrieval corpus, visible at a glance on the right of the chat. Rows
+// carry a hover-revealed delete; adding documents lives in the chat
+// input (📎).
+export function ContextPanel({
   documents,
   loading,
   onDocumentsChanged,
@@ -40,8 +41,6 @@ export function DocumentSidebar({
 }) {
   const [toDelete, setToDelete] = useState<DocumentSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const resumes = documents.filter((d) => d.docType === "resume");
-  const jobs = documents.filter((d) => d.docType === "job");
 
   async function confirmDelete() {
     if (!toDelete || deleting) return;
@@ -63,36 +62,55 @@ export function DocumentSidebar({
   }
 
   return (
-    <aside className="hidden w-72 shrink-0 flex-col border-r bg-muted/30 md:flex">
-      <div className="px-4 py-4">
-        <h1 className="text-sm font-semibold">Career Intelligence</h1>
-        <p className="text-xs text-muted-foreground">
-          Résumé vs job descriptions, grounded answers
-        </p>
+    <aside className="hidden w-72 shrink-0 flex-col border-l bg-muted/30 lg:flex">
+      <div className="flex items-center justify-between px-4 pb-2 pt-4">
+        <h2 className="text-sm font-semibold">Context</h2>
+        <Badge variant="secondary" className="text-[11px]">
+          {documents.length} file{documents.length === 1 ? "" : "s"}
+        </Badge>
       </div>
-      <Separator />
-      <ScrollArea className="min-h-0 flex-1 px-4 py-4">
+      <ScrollArea className="min-h-0 flex-1 px-2 py-2">
         {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
+          <div className="space-y-2 px-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : documents.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="px-2 text-xs text-muted-foreground">
             No documents yet. Run{" "}
             <code className="rounded bg-muted px-1 font-mono">pnpm seed</code>{" "}
             for the demo corpus, or attach a file with the 📎 in the chat box.
           </p>
         ) : (
-          <div className="space-y-5">
-            <DocGroup title="Résumé" docs={resumes} onDelete={setToDelete} />
-            <DocGroup
-              title="Job descriptions"
-              docs={jobs}
-              onDelete={setToDelete}
-            />
-          </div>
+          <ul className="space-y-1">
+            {documents.map((doc) => (
+              <li
+                key={doc.id}
+                className="group flex items-start gap-3 rounded-md px-2 py-2"
+              >
+                <DocIcon name={doc.name} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium" title={doc.name}>
+                    {doc.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {doc.docType} · {formatSize(doc.sizeBytes)} ·{" "}
+                    {formatWhen(doc.createdAt)}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="invisible size-6 shrink-0 text-muted-foreground hover:text-destructive group-hover:visible"
+                  onClick={() => setToDelete(doc)}
+                  aria-label={`Delete ${doc.name}`}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </li>
+            ))}
+          </ul>
         )}
       </ScrollArea>
 
@@ -126,49 +144,23 @@ export function DocumentSidebar({
   );
 }
 
-function DocGroup({
-  title,
-  docs,
-  onDelete,
-}: {
-  title: string;
-  docs: DocumentSummary[];
-  onDelete: (doc: DocumentSummary) => void;
-}) {
-  if (docs.length === 0) return null;
-  return (
-    <div>
-      <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {title}
-      </h2>
-      <ul className="space-y-1">
-        {docs.map((doc) => (
-          <li
-            key={doc.id}
-            className="group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm"
-          >
-            <FileText className="size-4 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 flex-1 truncate" title={doc.name}>
-              {doc.name}
-            </span>
-            <Badge
-              variant="outline"
-              className="shrink-0 text-[10px] group-hover:hidden"
-            >
-              {doc.chunkCount} chunk{doc.chunkCount === 1 ? "" : "s"}
-            </Badge>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="hidden size-6 shrink-0 text-muted-foreground hover:text-destructive group-hover:inline-flex"
-              onClick={() => onDelete(doc)}
-              aria-label={`Delete ${doc.name}`}
-            >
-              <Trash2 className="size-3.5" />
-            </Button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+function DocIcon({ name }: { name: string }) {
+  const Icon = /\.pdf$/i.test(name) ? File : FileText;
+  return <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />;
+}
+
+function formatSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${bytes} B`;
+}
+
+// Time of day for today's uploads, date otherwise — matches how little the
+// exact timestamp matters at this scale.
+function formatWhen(iso: string): string {
+  const date = new Date(iso);
+  const today = new Date().toDateString() === date.toDateString();
+  return today
+    ? date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+    : date.toLocaleDateString();
 }

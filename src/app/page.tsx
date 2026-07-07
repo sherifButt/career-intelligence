@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddDocumentDialog } from "@/components/chat/add-document-dialog";
+import { ChatsSidebar } from "@/components/chat/chats-sidebar";
 import {
-  DocumentSidebar,
+  ContextPanel,
   type DocumentSummary,
-} from "@/components/chat/document-sidebar";
+} from "@/components/chat/context-panel";
 import { SourcesPanel } from "@/components/chat/sources-panel";
 import type { ChatResponse } from "@/lib/types";
 import { Check, Copy, SendHorizontal, ShieldAlert, Square } from "lucide-react";
@@ -112,12 +113,14 @@ export default function ChatPage() {
     abortRef.current?.abort();
   }
 
+  const lastQuestion =
+    [...messages].reverse().find((m) => m.role === "user")?.content ?? null;
+
   return (
     <div className="flex h-full">
-      <DocumentSidebar
-        documents={documents}
-        loading={docsLoading}
-        onDocumentsChanged={loadDocuments}
+      <ChatsSidebar
+        messageCount={messages.length}
+        lastQuestion={lastQuestion}
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
@@ -202,6 +205,12 @@ export default function ChatPage() {
           </div>
         </div>
       </main>
+
+      <ContextPanel
+        documents={documents}
+        loading={docsLoading}
+        onDocumentsChanged={loadDocuments}
+      />
     </div>
   );
 }
@@ -270,7 +279,7 @@ function EmptyState({
       </h2>
       <p className="mt-1 max-w-md text-sm text-muted-foreground">
         Answers are grounded in the résumé and job descriptions in the
-        sidebar — every response shows the exact excerpts it used.
+        Context panel — every response shows the exact excerpts it used.
       </p>
       <div className="mt-6 w-full max-w-md">
         <QuickQueries onPick={onPick} disabled={disabled} />

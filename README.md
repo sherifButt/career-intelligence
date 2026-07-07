@@ -68,8 +68,10 @@ Key behaviours you can verify in the UI:
   (.md, .txt, .pdf, .docx — drag-and-drop or file picker). Text extraction runs server-side
   (unpdf for PDF, mammoth for docx); the document is chunked, embedded, and queryable
   immediately, with a scope chip appearing for each new job. Re-using a name replaces that
-  document; hovering a document in the sidebar reveals delete (with confirmation), which
-  cascades to its chunks and falls the scope back to "All jobs" if needed.
+  document; hovering a document in the Context panel (right) reveals delete (with
+  confirmation), which cascades to its chunks and falls the scope back to "All jobs" if
+  needed. The Chats panel (left) is a visible placeholder — multi-conversation support is
+  deliberately out of scope.
 - **Multi-job awareness** — the job-side retrieval budget is allocated *per job* (top-2 chunks
   from each posting), so comparative questions cover every job instead of letting the most
   similar posting monopolise the context; answers spanning several jobs are organised per job.

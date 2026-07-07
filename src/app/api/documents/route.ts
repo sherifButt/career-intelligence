@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { count, eq } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { chunks, documents, getDb } from "@/lib/db";
 
-// Backs the sidebar: which documents are in the corpus, and how many chunks
-// each contributed — makes the retrieval corpus visible at a glance.
+// Backs the context panel: which documents are in the corpus, how many
+// chunks each contributed, roughly how big they are, and when they were
+// ingested — makes the retrieval corpus visible at a glance.
 export async function GET() {
   try {
     const db = getDb();
@@ -13,6 +14,10 @@ export async function GET() {
         name: documents.name,
         docType: documents.docType,
         chunkCount: count(chunks.id),
+        // Extracted-text size (summed chunk chars, so slightly over via
+        // overlap) — close enough for a "4.2 KB" display label.
+        sizeBytes: sql<number>`coalesce(sum(length(${chunks.content})), 0)`,
+        createdAt: documents.createdAt,
       })
       .from(documents)
       .leftJoin(chunks, eq(chunks.documentId, documents.id))
