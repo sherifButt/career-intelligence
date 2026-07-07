@@ -1,5 +1,10 @@
 import OpenAI from "openai";
-import type { ChatMessage, CompletionResult, LlmProvider } from "./provider";
+import type {
+  ChatMessage,
+  CompletionOptions,
+  CompletionResult,
+  LlmProvider,
+} from "./provider";
 
 // gpt-4o-mini by default: grounded Q&A over pre-retrieved context is a task
 // small models handle well, and it keeps per-query cost around a tenth of a
@@ -18,13 +23,16 @@ export class OpenAiProvider implements LlmProvider {
     this.model = process.env.LLM_MODEL || DEFAULT_MODEL;
   }
 
-  async complete(messages: ChatMessage[]): Promise<CompletionResult> {
+  async complete(
+    messages: ChatMessage[],
+    options: CompletionOptions = {},
+  ): Promise<CompletionResult> {
     const res = await this.client.chat.completions.create({
       model: this.model,
       messages,
       // Low temperature: this is grounded analysis, not creative writing —
       // we want the same question to get roughly the same answer.
-      temperature: 0.2,
+      temperature: options.temperature ?? 0.2,
     });
 
     return {

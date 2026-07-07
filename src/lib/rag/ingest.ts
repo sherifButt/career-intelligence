@@ -83,7 +83,7 @@ export async function ingestDocument({
   return result;
 }
 
-async function reanalyzeAllJobs(): Promise<void> {
+export async function reanalyzeAllJobs(): Promise<void> {
   const db = getDb();
   const jobs = await db
     .select({ id: documents.id })

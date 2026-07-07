@@ -19,6 +19,8 @@ export interface JobAnalysis {
   riskNote: string;
   /** Candidate level vs the level the role is pitched at. */
   seniority: "under" | "fit" | "over";
+  /** Must-have requirements met, e.g. "6/9" — anchors the score. */
+  mustHaves?: string;
 }
 
 // Mirrors db/init.sql, which is the actual source of truth (it runs on first

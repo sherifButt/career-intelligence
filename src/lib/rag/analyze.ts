@@ -7,19 +7,41 @@ import { estimateCostUSD } from "@/lib/observability/cost";
 // a stored result instead of paying an LLM call per view. ~$0.0004 per job
 // with gpt-4o-mini.
 
+// Unanchored "give me a score" prompts cluster around 80-85 for any
+// plausible candidate (observed: a TypeScript-first CV scored the same 85 on
+// an expert-Python role as on a perfectly matching one). The rubric below
+// forces requirement-by-requirement judgment and anchors the bands, with the
+// role's PRIMARY skill weighted hardest.
 const SYSTEM_PROMPT = `You are an experienced technical recruiter doing a first-pass screen of one candidate résumé against one job description.
 
+Work through this, in order, before answering:
+1. Identify the role's PRIMARY required skill/stack (the language, platform, or discipline the job is actually about) and the required years of experience in it.
+2. List the job's must-have requirements (required qualifications; ignore nice-to-haves).
+3. For each must-have, judge from the résumé text alone: met, partial, or missing. A skill merely listed among many is "partial" if the job demands expert/primary-level use of it.
+4. Count them, then score with these anchors:
+   - 85–100: essentially all must-haves met, including the PRIMARY skill as the candidate's own primary stack and the years requirement.
+   - 70–84: most must-haves met; 1–2 partial gaps, none in the PRIMARY skill.
+   - 50–69: strong adjacent profile, but the PRIMARY skill is secondary in the résumé, or the required domain/years are clearly not evidenced.
+   - 30–49: transferable skills only; several must-haves missing.
+   - below 30: wrong role.
+   Hard rule: if the candidate's primary stack differs from the role's PRIMARY skill, the score must be below 70 — no matter how strong the rest is.
+
 Return ONLY a JSON object, no prose, exactly this shape:
-{"matchScore": <integer 0-100>, "risk": "low"|"medium"|"high", "riskNote": "<one sentence, max 90 chars, naming the single biggest screening-out risk>", "seniority": "under"|"fit"|"over"}
+{"matchScore": <integer 0-100>, "mustHaves": "<met>/<total>", "risk": "low"|"medium"|"high", "riskNote": "<one sentence, max 90 chars, naming the single biggest screening-out risk>", "seniority": "under"|"fit"|"over"}
 
 Definitions:
-- matchScore: overall skills + experience match. 100 = ideal on paper; 50 = plausible stretch; below 30 = wrong role.
-- risk: likelihood an HR screen rejects the application (missing must-haves, domain mismatch, certifications).
+- risk: likelihood an HR screen rejects the application (missing must-haves, domain mismatch, certifications). Tie it to the score: below 50 is never "low" risk.
 - seniority: candidate's level relative to the level the role is pitched at ("over" = overqualified).
-Judge only from the two texts. Be honest, not kind.`;
+Judge only from the two texts. Be honest, not kind. Use the full range — identical scores for different jobs almost always means you failed to discriminate.`;
 
 // Enough context for a screen without blowing the budget on huge documents.
 const MAX_CHARS = 8000;
+
+// Self-consistency: even at temperature 0 the must-have extraction wobbles
+// between runs (observed: the same job flipping 85 ↔ 70 because the model
+// found 8 vs 10 requirements). Median-of-3 samples stabilises the score for
+// 3x a sub-cent cost.
+const SAMPLES = 3;
 
 export async function analyzeJobFit(
   jobContent: string,
@@ -28,29 +50,51 @@ export async function analyzeJobFit(
   // No résumé ingested yet → nothing to compare against.
   if (!resumeText) return null;
 
-  const completion = await getLlmProvider().complete([
-    { role: "system", content: SYSTEM_PROMPT },
+  const messages = [
+    { role: "system" as const, content: SYSTEM_PROMPT },
     {
-      role: "user",
+      role: "user" as const,
       content: `RÉSUMÉ:\n${resumeText.slice(0, MAX_CHARS)}\n\nJOB DESCRIPTION:\n${jobContent.slice(0, MAX_CHARS)}`,
     },
-  ]);
+  ];
 
-  const analysis = parseAnalysis(completion.text);
+  const provider = getLlmProvider();
+  const completions = await Promise.all(
+    Array.from({ length: SAMPLES }, () =>
+      provider.complete(messages, { temperature: 0 }),
+    ),
+  );
+
+  const samples = completions
+    .map((c) => parseAnalysis(c.text))
+    .filter((a): a is JobAnalysis => a !== null);
+
+  const tokensIn = completions.reduce((n, c) => n + c.tokensIn, 0);
+  const tokensOut = completions.reduce((n, c) => n + c.tokensOut, 0);
+  const analysis = samples.length > 0 ? medianAnalysis(samples) : null;
   console.log(
     JSON.stringify({
       event: "job_analysis",
       ok: analysis !== null,
-      tokensIn: completion.tokensIn,
-      tokensOut: completion.tokensOut,
+      samples: samples.length,
+      scores: samples.map((s) => s.matchScore),
+      tokensIn,
+      tokensOut,
       estimatedCostUSD: estimateCostUSD(
-        completion.model,
-        completion.tokensIn,
-        completion.tokensOut,
+        completions[0].model,
+        tokensIn,
+        tokensOut,
       ),
     }),
   );
   return analysis;
+}
+
+// The sample with the median score wins whole — score, note, and must-have
+// count stay mutually consistent instead of being averaged into a chimera.
+function medianAnalysis(samples: JobAnalysis[]): JobAnalysis {
+  const sorted = [...samples].sort((a, b) => a.matchScore - b.matchScore);
+  return sorted[Math.floor(sorted.length / 2)];
 }
 
 // The résumé as one text: its chunks in order. Chunk overlap duplicates a
@@ -87,6 +131,9 @@ function parseAnalysis(text: string): JobAnalysis | null {
       risk,
       riskNote: typeof raw.riskNote === "string" ? raw.riskNote.slice(0, 140) : "",
       seniority,
+      ...(typeof raw.mustHaves === "string" && /^\d+\/\d+$/.test(raw.mustHaves)
+        ? { mustHaves: raw.mustHaves }
+        : {}),
     };
   } catch {
     return null;

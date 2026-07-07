@@ -222,7 +222,14 @@ function MatchStats({ analysis }: { analysis: JobAnalysis }) {
   return (
      <span
         className='inline-flex flex-wrap items-center gap-1.5'
-        title={analysis.riskNote || undefined}>
+        title={
+          [
+            analysis.mustHaves && `must-haves met: ${analysis.mustHaves}`,
+            analysis.riskNote,
+          ]
+            .filter(Boolean)
+            .join(" — ") || undefined
+        }>
         <span className='flex items-center gap-1 text-xs font-normal tabular-nums text-muted-foreground'>
            <span
               className={`size-2 rounded-full ${scoreColor(analysis.matchScore)}`}

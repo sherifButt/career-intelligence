@@ -17,8 +17,16 @@ export interface CompletionResult {
   model: string;
 }
 
+export interface CompletionOptions {
+  /** Overrides the provider's default (0.2). Use 0 for scoring/judgment. */
+  temperature?: number;
+}
+
 export interface LlmProvider {
-  complete(messages: ChatMessage[]): Promise<CompletionResult>;
+  complete(
+    messages: ChatMessage[],
+    options?: CompletionOptions,
+  ): Promise<CompletionResult>;
 }
 
 export function getLlmProvider(): LlmProvider {
