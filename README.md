@@ -4,11 +4,11 @@ A full-stack RAG application that analyses a résumé against multiple job descr
 answers grounded questions about fit, skill gaps, experience alignment, and interview prep —
 with every answer showing the exact source excerpts and retrieval scores it used.
 
-**▶ Demo (5 min)** — grounded Q&A with inline citations, live job upload + screening, the
+**Demo (5 min)** — grounded Q&A with inline citations, live job upload + screening, the
 guardrail refusing off-topic questions, one-click interview prep, and the structured
-telemetry each query emits.
+telemetry each query emits. Click to watch:
 
-https://raw.githubusercontent.com/sherifButt/career-intelligence/main/docs/demo.mp4
+[![Watch the 5-minute demo](docs/screenshots/demo-thumb.png)](docs/demo.mp4)
 
 > **Note on AI use:** AI coding tools (Claude Code) were used heavily to build this
 > application, working phase-by-phase against a spec I wrote first (`docs/SPEC.md`). The
