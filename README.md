@@ -188,7 +188,7 @@ tests/                       # retrieval integration test (self-skipping)
 
 > ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
 > Read entry **(g)** in docs/DECISIONS.draft.md — it contains the factual record
-> (spec-first CLAUDE.md, phase commits, verification gates, what was delegated vs kept human,
+> (spec-first docs/SPEC.md, phase commits, verification gates, what was delegated vs kept human,
 > and four "AI/tooling was wrong" incidents — the docker exit-code lie is the strongest).
 > Prompts to cover:
 >   - Your workflow: spec file first, phase-boundary commits, typecheck/test/browser-verify gates.

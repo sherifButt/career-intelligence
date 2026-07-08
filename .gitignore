@@ -37,7 +37,7 @@ yarn-error.log*
 # local session/tooling artifacts
 session.json
 
-# raw AI decision-log draft — re-voiced into README.md, not submitted (CLAUDE.md §9)
+# raw AI decision-log draft — re-voiced into README.md, not submitted (see docs/SPEC.md workflow)
 docs/DECISIONS.draft.md
 
 # vercel
