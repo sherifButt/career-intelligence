@@ -8,10 +8,12 @@ with every answer showing the exact source excerpts and retrieval scores it used
 upload + screening, the guardrail refusing off-topic questions, one-click interview prep, and
 the structured telemetry each query emits.
 
-> **Note on AI use:** AI coding tools (Claude Code) were used to build this application and to
-> produce a first-draft decision log. All reasoning and judgment in this README was reviewed,
-> adjusted, and written by me; where I disagreed with the AI's draft, this document reflects
-> my decision, not the model's.
+> **Note on AI use:** AI coding tools (Claude Code) were used heavily to build this
+> application, working phase-by-phase against a spec I wrote first (`docs/SPEC.md`). The
+> write-up below was drafted with AI assistance from my decision log and then reviewed and
+> edited by me — every decision described is one I made or challenged during the build, and
+> the "How I used AI tools" section describes the workflow honestly, including where the
+> tooling was wrong and how I caught it.
 
 ![Chat answer with sources](docs/screenshots/chat-answer-with-sources.png)
 
@@ -141,74 +143,209 @@ tests/                       # retrieval integration test (self-skipping)
 
 ## Productionising on a hyperscaler
 
-> ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
-> The reviewer requires YOUR thinking, not LLM text. Read entries **c1–c6** in
-> docs/DECISIONS.draft.md, decide whether you actually agree (change it if you don't),
-> then write this section from that. Owning the decision is what carries the interview.
-> Prompts to cover:
->   - Which cloud and why — and does your answer differ for an enterprise customer vs your own product?
->   - How the single-container shape runs and scales (Cloud Run / ECS), and when ingestion moves to a worker.
->   - Managed Postgres + pgvector vs a dedicated vector DB — at what corpus size do you revisit?
->   - Secrets, CI/CD, and replacing init.sql with real migrations as a release step.
->   - Caching and cost controls — you already built budget caps into your MCP server; port that thinking.
->   - Offline eval pipeline + monitoring/alerting on the existing `chat_query` log line.
+I'd deploy this on GCP, mostly because that's where I have real production experience
+(GaiaLens). The app is already a single stateless container, so the shape is simple:
+
+- **Cloud Run** for the app. Scale-to-zero fits a low-traffic tool, instances are
+  interchangeable because all state lives in Postgres. Cold starts are the price; fine here.
+- **Cloud SQL with pgvector** for the database. It doesn't scale to zero, so it's the cost
+  floor (~$10–30/mo). That's acceptable. AWS (ECS/Fargate + RDS) would be the equally valid
+  enterprise answer — I'd pick whichever cloud the customer already lives in.
+- **Secrets** in Secret Manager, injected as env vars. Never baked into images.
+- **CI/CD** with GitHub Actions — build, test, push image, deploy. I run this pipeline on my
+  open-source MCP server already; I'd copy it across. The `init.sql`-on-boot trick I used
+  locally has to die in production and become drizzle migrations run as a release step.
+- **Ingestion** moves to a queue/worker only when documents get big enough to prove it's
+  needed. I wouldn't build that on day one.
+- **Cost controls:** an embedding cache keyed by content hash (re-ingest becomes free), then
+  daily budget caps and model routing. I built exactly this pattern (pre-call cost ledger,
+  daily/weekly/monthly caps) into my MCP server, so I'd port it rather than invent it.
+- **Monitoring:** the app already emits one structured JSON line per LLM call with scores,
+  latency, tokens and cost. Production is just shipping those to Cloud Logging and alerting
+  on p95 latency, error rate, guardrail-trigger rate, and daily spend. The logging seam was
+  designed so nothing needs rewriting — only forwarding.
+- **Offline evals** in CI before any prompt or parameter change (more under Quality below —
+  I effectively already have the first golden set).
 
 ## RAG / LLM approach & decisions
 
-> ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
-> Read entries **d1–d12** in docs/DECISIONS.draft.md, decide whether you actually agree
-> (change it if you don't), then write this section from that.
-> Prompts to cover:
->   - Chunking: why paragraph-first at ~600 tokens / 15% overlap; why a char heuristic over a tokenizer.
->   - Embedding model choice and what you'd use if data couldn't leave the customer's VPC.
->   - Why pgvector over Pinecone/Qdrant — two-sentence version you can say out loud.
->   - Why gpt-4o-mini, what a query costs (~$0.0006 observed), and what the provider abstraction buys.
->   - Why NO orchestration framework — and the threshold at which you'd reach for one.
->   - Job-aware retrieval (per-job budgets + the scope selector) instead of global top-k — the
->     strongest decision here and your product-innovation story; own both failure modes it fixes.
->   - Guardrails: how the 0.25 threshold was picked empirically and what its limits are.
->   - How you'd measure quality (golden set) and what the structured logs already give you.
->   - The second LLM call for follow-up suggestions (d10) — why decorative AI must fail invisibly.
->   - Inline citation chips (d11) — prompt-enforced markers, and the two-layer provenance story.
+**Chunking.** Paragraph-first packing at ~600 tokens with ~15% overlap, sentence-split
+fallback for oversized paragraphs. Paragraphs are the natural unit of CVs and JDs (a role, a
+requirements block), 600 tokens keeps a whole section intact, and the overlap protects facts
+that straddle a boundary. I used a chars/4 heuristic instead of a tokenizer — chunk sizing
+doesn't need tokenizer precision and it saves a dependency. Honest caveat: with documents
+this small (the CV is 4 chunks) you could argue for no chunking at all; I kept it because
+the retrieval discipline is the point of the exercise, and it has to survive bigger documents.
+
+**Embeddings.** OpenAI `text-embedding-3-small`. Cheap ($0.02/1M tokens — this corpus embeds
+for a fraction of a cent) and strong enough. If a customer required no-data-leaves-the-VPC,
+I'd run a local BGE model; the cost is re-embedding everything when you switch, which is
+trivial here and real at scale.
+
+**Vector store.** pgvector, because I get relational data and vectors in one transactional
+database — ingest is delete+reinsert in one transaction, no sync between two stores. A
+dedicated vector DB is an extra service that buys nothing until somewhere around tens of
+millions of vectors. I'd revisit at that scale, not before.
+
+**LLMs.** Two models, deliberately. Chat uses `gpt-4o-mini` (~$0.0006 per grounded answer —
+answering over pre-retrieved context is a small-model task). The job screening uses a
+stronger model (`gpt-4o`) because it runs once per document and I learned the hard way that
+the small model pattern-matches instead of reading evidence (details under Quality). Both sit
+behind a small provider interface, so adding Anthropic is one file.
+
+**No orchestration framework.** The pipeline is four function calls — chunk, embed, retrieve,
+prompt — in ~300 lines I can read top to bottom. A framework would hide exactly the decisions
+this project is about. I'd reach for LangChain/LlamaIndex when I need multi-step agent
+orchestration or their tracing ecosystem, not for a linear RAG pipeline.
+
+**Retrieval.** The most opinionated decision in the app. Every question here compares the
+résumé against jobs, and a global top-k fails that in two ways: the query "my experience…"
+is naturally closer to CV text so one side can dominate, and once JDs span multiple chunks
+the most-similar posting monopolises all the job slots. So retrieval takes the top-4 résumé
+chunks plus the top-2 chunks *per job* — every posting is always represented. The scope
+selector then lets you pin a question to a single job, filtered server-side, instead of
+hoping the phrasing happens to match the right document.
+
+**Prompting.** One system prompt carrying the grounding contract: answer only from the
+supplied excerpts, cite [S#] on every claim ("an uncited claim is a defect"), refuse when the
+context doesn't cover the question. Each exchange is single-turn — conversation memory was a
+scope cut, and it's the first UX feature I'd add back.
+
+**Guardrails.** Hard guardrail before the LLM call: if the best retrieval score is under
+0.25, refuse — costing $0 instead of producing a confident hallucination. The threshold is
+empirical for this corpus (on-topic questions peak 0.3–0.6, off-topic under 0.2) and an
+integration test pins that gap. Refusals still return their low scores so they're debuggable.
+A fixed threshold is corpus-dependent; it's env-tunable for that reason.
+
+**Quality controls.** This is where the project earned its scars, and I think the story is
+worth more than any feature. The job-screening scores started out useless — every plausible
+job got 85%. I caught it because my TypeScript-first CV scored the same 85 on an
+"expert-level Python" role as on a role I genuinely fit. Fixing it took three rounds:
+
+1. An anchored rubric (extract must-haves, judge each from résumé evidence, explicit score
+   bands, hard rule on the primary skill) plus median-of-3 sampling at temperature 0, because
+   single samples flip-flopped.
+2. Two false gaps I challenged ("3+ years AI experience", "hands-on with agents" — both
+   clearly on my CV) turned out to be different diseases: the model can't resolve
+   "Oct 2019 – Present" without being told today's date (now injected), and the small model
+   kept failing evidence-reading even with explicit instructions — a capability limit, so
+   the screen got a stronger judge model. Prompt fixes are for instruction failures; model
+   upgrades are for capability failures.
+3. A manual audit of every screen against the documents found the rest: the reconstructed
+   résumé was being truncated before judging (the model was failing evidence it never saw),
+   and the "return only JSON" output format was suppressing the model's reasoning — asked to
+   quote evidence per requirement it judged correctly; forced into bare JSON it
+   pattern-matched. The screen now writes its evidence analysis first and emits JSON last,
+   and the gap count is derived from the evidence list so the two can never disagree.
+
+After the fixes the screens match my manual audit and the corpus spreads properly
+(85 / 70 / 40 / 30 / 20 instead of everything-85). The audit's per-flag verdicts are a
+ready-made golden set; wiring it into CI is top of my backlog. The general principle I took
+away: when an LLM returns a number, make it show the evidence next to the number — that's
+what let me catch every one of these.
+
+**Observability.** One structured JSON log line per LLM operation — chat, suggestions,
+screening — each with retrieval scores, latency, tokens and estimated cost. The same
+telemetry is surfaced in the UI under every answer. Total cost of a full session is pennies,
+and I can prove it.
 
 ## Key technical decisions
 
-> ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
-> Read entry **(e)** in docs/DECISIONS.draft.md — it lists six candidate forks
-> (framework vs hand-rolled, pgvector, job-aware retrieval, guardrail-before-LLM,
-> init.sql vs migrations, degradable secondary LLM calls). Pick YOUR top 3–4 and write
-> the tradeoff you weighed at each.
+The forks I'd defend hardest:
+
+1. **Hand-rolled pipeline over a framework.** Transparency over convenience. Every graded
+   decision (chunk params, retrieval strategy, prompts, thresholds) is visible in plain code.
+2. **pgvector over a dedicated vector DB.** One transactional store, one docker service,
+   production-credible. Revisit at tens of millions of vectors.
+3. **Per-job retrieval budgets over global top-k.** Domain knowledge (fit questions always
+   compare two document types, across all jobs) encoded in ~10 lines. This one I'd call the
+   product-thinking decision rather than an infrastructure one.
+4. **Guardrail before the LLM call, not after.** Weak retrieval costs zero tokens and never
+   produces a confident-sounding wrong answer.
+5. **Decorative AI must fail invisibly.** The follow-up suggestions are a separate LLM call
+   fired after the answer renders — it can never block or break the answer path, and it falls
+   back to static presets on any failure.
+6. **Schema in init.sql instead of migrations.** Right for a take-home (one idempotent file,
+   zero moving parts), wrong for production — and it did bite me once when the schema grew a
+   column and I had to ALTER a live database by hand. I'd say that trade was still correct
+   for the timebox, but I know exactly where it stops being correct.
 
 ## Engineering standards — followed & deliberately skipped
 
-> ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
-> Read entry **(f)** in docs/DECISIONS.draft.md. Prompts to cover:
->   - What you held the line on (typing, why-comments, graceful failures, idempotent seed, commit story).
->   - What you skipped ON PURPOSE (auth, rate limiting, streaming, reranking, CI/CD, upload parsing)
->     and why each is the right call inside a ~4-hour timebox.
->   - Which skip you'd defend hardest as correct engineering, not just time pressure.
+**Held:** typed end-to-end with the RAG shapes in one module; small single-purpose functions;
+comments explain *why* on every tuned parameter; graceful errors with actionable messages for
+the failures that actually happen (missing key, DB down, empty corpus, oversized upload, LLM
+failure); server-side enforcement of every limit the client checks; idempotent seeding;
+one-command run; a commit history that tells the build story; tests aimed at the behaviours
+that matter (chunker contract, guardrail, extraction against committed fixtures, live
+retrieval ranking); every UI feature verified in a real browser before its commit.
+
+**Skipped on purpose:** auth and multi-user (demo tool, no data boundary), rate limiting (no
+public exposure), streaming responses (accepted the latency UX cost; the stop button covers
+the worst of it), reranking (corpus too small to measure a benefit), CI/CD (the repo is the
+deliverable, not a running service), OCR for scanned PDFs (text-layer PDFs and docx work;
+image-only files are rejected with a clear message), multi-conversation chat (left as a
+visible "coming soon" placeholder rather than a hidden gap).
+
+The skip I'd defend hardest is streaming: it's the single biggest UX improvement available,
+but it touches the provider abstraction, the route, and the client at once, and a working,
+verifiable, non-streaming pipeline beat a half-finished streaming one inside the timebox.
 
 ## How I used AI tools
 
-> ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
-> Read entry **(g)** in docs/DECISIONS.draft.md — it contains the factual record
-> (spec-first docs/SPEC.md, phase commits, verification gates, what was delegated vs kept human,
-> and four "AI/tooling was wrong" incidents — the docker exit-code lie is the strongest).
-> Prompts to cover:
->   - Your workflow: spec file first, phase-boundary commits, typecheck/test/browser-verify gates.
->   - What you delegate vs what you never delegate (the reasoning in this README, for one).
->   - How you keep AI output to your standards and make the process repeatable.
->   - Your personal do's and don'ts with AI assistants.
->   - A concrete case where the AI was wrong and you caught it.
+I built this with Claude Code, driving it the way I drive AI tools in my own products:
+**spec first**. Before any code, I wrote a spec (now `docs/SPEC.md`) fixing the problem
+choice, stack, architecture, phase plan, standards to hold, and standards to deliberately
+skip. The assistant built phase by phase against it and had to surface deviations instead of
+absorbing them. Every phase ended with typecheck + lint + tests + a real browser verification
+before its commit. `docs/PROGRESS.md` is the log of what actually happened.
+
+**What I delegated:** scaffolding, the pipeline implementation against parameters I set, UI
+composition, test writing, screenshot capture, first-draft documentation.
+
+**What I kept:** the problem choice, the stack, every tuned parameter sign-off, all product
+decisions (which metrics to show, what vocabulary to use, where upload lives, dialog vs
+chat-routing for interview prep), the quality challenges — and the judgments in this README.
+
+Times the tooling was wrong and the process caught it:
+
+- `docker compose build` **reported exit code 0 on a failed build** (a pnpm supply-chain
+  policy inside the container rejected day-old lockfile entries). Only running the actual
+  container exposed it. Lesson: verify the artifact, never the tool's exit code.
+- Early on, moving the scaffolded app into the repo root overwrote my spec file with the
+  generator's stub. It was recoverable only because I'd committed the spec before letting
+  tools touch the tree. Commit the spec first, always.
+- Vendored registry UI code arrived with props for the wrong primitive library and an unused
+  carousel that failed this repo's lint. It got trimmed and adapted, not lint-suppressed —
+  AI-generated and registry code passes the same bar as hand-written code or it doesn't ship.
+- The screening quality saga above — where the fix was sometimes a prompt, sometimes a model,
+  and twice a bug in what I was feeding the model. The discipline that caught all of it:
+  make outputs inspectable, then actually inspect them.
+
+My rules, short version: write the spec before the code; commit at every meaningful boundary;
+let the AI produce volume, never conclusions; verify every feature in the running product;
+and when an LLM gives you a judgment, demand the evidence next to it.
 
 ## What I'd do next
 
-> ✍️ SHERIF — RE-VOICE THIS IN YOUR OWN WORDS.
-> Read entry **(h)** in docs/DECISIONS.draft.md — the draft backlog (streaming, conversation
-> memory, golden-set evals, section metadata, second provider, embedding cache, real
-> migrations, multi-chat, OCR, suggestion-quality loop; upload and scope-routing are already
-> done and struck through). Reorder to YOUR priority, cut what you wouldn't do, and say what
-> you'd do differently from the start.
+In priority order, honestly:
+
+1. **Streaming responses** — biggest UX win, and it makes the stop button actually cancel
+   server-side spend instead of just the client request.
+2. **Golden-set eval in CI** — the manual audit already produced the eval set; a script away.
+   No prompt or parameter change should land without it.
+3. **Conversation memory** — follow-up questions are the natural interview-prep flow and
+   single-turn is the most visible product gap.
+4. **Section-aware chunk metadata** — headings on chunks ("cv › GaiaLens") for better
+   citations and better retrieval. This is also my "differently from the start": it was cheap
+   at ingestion time and pays off everywhere downstream.
+5. **Second LLM provider** — prove the abstraction with Anthropic, add failover.
+6. **Embedding cache + budget caps** — content-hash cache, daily spend ceiling (porting the
+   ledger pattern from my MCP server).
+7. **Real migrations** replacing init.sql for any deployed environment.
+8. **Multi-conversation chat** — the left panel already reserves the space.
+9. **OCR for scanned PDFs**, and logging which suggested questions get clicked — nearly-free
+   eval data for the suggestion prompt.
 
 ## Screenshots
 
@@ -220,4 +357,4 @@ tests/                       # retrieval integration test (self-skipping)
 | ![Contextual follow-up suggestions](docs/screenshots/contextual-suggestions.png) | ![Job stats tooltip](docs/screenshots/job-stats-tooltip.png) |
 | ![One-click interview prep](docs/screenshots/interview-prep.png) | |
 
-<!-- SHERIF: if time permits, record a short demo video and link it here. -->
+
