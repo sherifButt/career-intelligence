@@ -4,6 +4,10 @@ A full-stack RAG application that analyses a résumé against multiple job descr
 answers grounded questions about fit, skill gaps, experience alignment, and interview prep —
 with every answer showing the exact source excerpts and retrieval scores it used.
 
+**▶ [Watch the 5-minute demo](docs/demo.mp4)** — grounded Q&A with inline citations, live job
+upload + screening, the guardrail refusing off-topic questions, one-click interview prep, and
+the structured telemetry each query emits.
+
 > **Note on AI use:** AI coding tools (Claude Code) were used to build this application and to
 > produce a first-draft decision log. All reasoning and judgment in this README was reviewed,
 > adjusted, and written by me; where I disagreed with the AI's draft, this document reflects
