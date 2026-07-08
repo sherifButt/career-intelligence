@@ -6,9 +6,11 @@ with every answer showing the exact source excerpts and retrieval scores it used
 
 **Demo (5 min)** — grounded Q&A with inline citations, live job upload + screening, the
 guardrail refusing off-topic questions, one-click interview prep, and the structured
-telemetry each query emits. Click to watch:
+telemetry each query emits:
 
-[![Watch the 5-minute demo](docs/screenshots/demo-thumb.png)](docs/demo.mp4)
+https://github.com/user-attachments/assets/6977325f-95ee-4c1b-a0ed-4d9698945eb2
+
+<sub>Player not loading? The video file is also in the repo: [docs/demo.mp4](docs/demo.mp4)</sub>
 
 > **Note on AI use:** AI coding tools (Claude Code) were used heavily to build this
 > application, working phase-by-phase against a spec I wrote first (`docs/SPEC.md`). The
